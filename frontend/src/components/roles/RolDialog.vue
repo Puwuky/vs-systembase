@@ -1,44 +1,35 @@
 <template>
-  <v-dialog
-    :model-value="modelValue"
-    @update:model-value="cerrar"
-    max-width="400"
-  >
+  <v-dialog v-model="model" max-width="400">
     <v-card>
       <v-card-title>
-        {{ rol ? 'Editar Rol' : 'Nuevo Rol' }}
+        {{ rol ? 'Editar rol' : 'Nuevo rol' }}
       </v-card-title>
 
       <v-card-text>
-        <v-text-field
-          label="Nombre"
-          v-model="form.nombre"
-        />
+        <v-text-field v-model="form.nombre" label="Nombre" />
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
         <v-btn text @click="cerrar">Cancelar</v-btn>
-        <v-btn color="primary" @click="guardar">Guardar</v-btn>
+        <v-btn color="primary" @click="guardar">
+          Guardar
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script>
-import rolService from '../../api/rol.service';
+import rolService from '../../api/rol.service.js';
 
 export default {
   props: {
-    modelValue: {
-      type: Boolean,
-      required: true
-    },
-    rol: {
-      type: Object,
-      default: null
-    }
+    modelValue: Boolean,
+    rol: Object
   },
+
+  emits: ['update:modelValue', 'guardado'],
 
   data() {
     return {
@@ -48,32 +39,48 @@ export default {
     };
   },
 
+  computed: {
+    model: {
+      get() {
+        return this.modelValue;
+      },
+      set(v) {
+        this.$emit('update:modelValue', v);
+      }
+    }
+  },
+
   watch: {
     rol: {
       immediate: true,
       handler(rol) {
-        this.form.nombre = rol ? rol.nombre : '';
+        this.form = {
+          nombre: rol ? rol.nombre : ''
+        };
       }
     }
   },
 
   methods: {
     cerrar() {
-      this.$emit('update:modelValue', false);
+      this.model = false;
     },
 
     async guardar() {
-      if (this.rol) {
-        await rolService.editar(this.rol.id, this.form);
+      if (this.rol?.id) {
+        // EDITAR (solo nombre)
+        await rolService.editar(this.rol.id, {
+          nombre: this.form.nombre
+        });
       } else {
+        // CREAR (activo por default en backend)
         await rolService.crear({
-          nombre: this.form.nombre,
-          activo: true
+          nombre: this.form.nombre
         });
       }
 
-      this.cerrar();
       this.$emit('guardado');
+      this.cerrar();
     }
   }
 };

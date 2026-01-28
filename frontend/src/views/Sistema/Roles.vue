@@ -2,60 +2,61 @@
     <v-container fluid>
 
         <!-- HEADER -->
-        <v-row align="center" class="mb-4">
-            <v-col cols="6" class="d-flex align-center">
-                <v-icon class="mr-2">mdi-shield-account</v-icon>
-                <h2 class="mb-0">Roles</h2>
+        <v-row class="mb-4">
+            <v-col>
+                <h2>Roles</h2>
+                <span class="grey--text">
+                    Administración de roles del sistema
+                </span>
             </v-col>
 
-            <v-col cols="6" class="text-right">
-                <v-btn color="primary" @click="abrirDialogCrear">
-                    + NUEVO ROL
+            <v-col class="text-right">
+                <v-btn color="primary" @click="nuevoRol">
+                    <v-icon left>mdi-shield-plus</v-icon>
+                    Nuevo rol
                 </v-btn>
             </v-col>
         </v-row>
 
         <!-- TABLA -->
-        <v-card>
-            <v-card-text class="pa-0">
-                <v-data-table :headers="headers" :items="roles" item-key="id" dense class="elevation-1">
-                    <!-- ACTIVO -->
-                    <template v-slot:item.activo="{ item }">
-                        <div class="d-flex justify-center">
-                            <v-switch v-model="item.activo" inset hide-details @change="cambiarEstado(item)" />
-                        </div>
-                    </template>
-
-                    <!-- ACCIONES -->
-                    <template v-slot:item.acciones="{ item }">
-                        <v-btn icon @click="editarRol(item)">
-                            <v-icon>mdi-pencil</v-icon>
-                        </v-btn>
-
-                        <v-btn icon @click="abrirAsignarMenus(item)">
-                            <v-icon>mdi-view-list</v-icon>
-                        </v-btn>
-                    </template>
-                </v-data-table>
-            </v-card-text>
-        </v-card>
+        <roles-table
+            :roles="roles"
+            :headers="headers"
+            @editar="editarRol"
+            @menus="abrirMenus"
+            @cambiar-estado="cambiarEstado"
+        />
 
         <!-- DIALOG CREAR / EDITAR -->
-        <rol-dialog v-model="dialogRol" :rol="rolSeleccionado" @guardado="cargarRoles" />
+        <rol-dialog
+            v-model="mostrarDialog"
+            :rol="rolSeleccionado"
+            @guardado="cargarRoles"
+        />
 
-        <!-- DIALOG ASIGNAR MENÚS -->
-        <rol-menus-dialog v-model="dialogMenus" :rol="rolSeleccionado" />
+        <!-- DIALOG MENUS -->
+        <rol-menus-dialog
+            v-model="mostrarMenus"
+            :rol="rolSeleccionado"
+        />
 
     </v-container>
 </template>
 
 <script>
-import rolService from '../../api/rol.service';
+import RolesTable from '../../components/roles/RolesTable.vue';
 import RolDialog from '../../components/roles/RolDialog.vue';
 import RolMenusDialog from '../../components/roles/RolMenusDialog.vue';
+import rolService from '../../api/rol.service.js';
+
+const COLUMN_TITLES = {
+    nombre: 'Nombre',
+    activo: 'Activo'
+};
 
 export default {
     components: {
+        RolesTable,
         RolDialog,
         RolMenusDialog
     },
@@ -63,16 +64,10 @@ export default {
     data() {
         return {
             roles: [],
-            dialogRol: false,
-            dialogMenus: false,
+            headers: [],
             rolSeleccionado: null,
-
-            headers: [
-                { text: 'ID', value: 'id', width: 80 },
-                { text: 'Rol', value: 'nombre' },
-                { text: 'Activo', value: 'activo', align: 'center', width: 120 },
-                { text: 'Acciones', value: 'acciones', sortable: false, align: 'center', width: 140 }
-            ]
+            mostrarDialog: false,
+            mostrarMenus: false
         };
     },
 
@@ -82,23 +77,37 @@ export default {
 
     methods: {
         async cargarRoles() {
-            const { data } = await rolService.getAll();
-            this.roles = data;
+            const res = await rolService.getAll();
+            this.roles = res.data;
+
+            if (this.headers.length === 0 && this.roles.length > 0) {
+                this.headers = Object.keys(this.roles[0])
+                    .filter(key => COLUMN_TITLES[key])
+                    .map(key => ({
+                        key,
+                        title: COLUMN_TITLES[key]
+                    }));
+
+                this.headers.push({
+                    key: 'actions',
+                    title: 'Acciones'
+                });
+            }
         },
 
-        abrirDialogCrear() {
+        nuevoRol() {
             this.rolSeleccionado = null;
-            this.dialogRol = true;
+            this.mostrarDialog = true;
         },
 
         editarRol(rol) {
-            this.rolSeleccionado = { ...rol };
-            this.dialogRol = true;
+            this.rolSeleccionado = rol;
+            this.mostrarDialog = true;
         },
 
-        abrirAsignarMenus(rol) {
+        abrirMenus(rol) {
             this.rolSeleccionado = rol;
-            this.dialogMenus = true; // 👈 SOLO ESTO
+            this.mostrarMenus = true;
         },
 
         async cambiarEstado(rol) {
