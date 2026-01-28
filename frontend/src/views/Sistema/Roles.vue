@@ -19,26 +19,14 @@
         </v-row>
 
         <!-- TABLA -->
-        <roles-table
-            :roles="roles"
-            :headers="headers"
-            @editar="editarRol"
-            @menus="abrirMenus"
-            @cambiar-estado="cambiarEstado"
-        />
+        <roles-table :roles="roles" :headers="headers" @editar="editarRol" @menus="abrirMenus"
+            @cambiar-estado="cambiarEstado" />
 
         <!-- DIALOG CREAR / EDITAR -->
-        <rol-dialog
-            v-model="mostrarDialog"
-            :rol="rolSeleccionado"
-            @guardado="cargarRoles"
-        />
+        <rol-dialog v-model="mostrarDialog" :rol="rolSeleccionado" @guardado="cargarRoles" />
 
         <!-- DIALOG MENUS -->
-        <rol-menus-dialog
-            v-model="mostrarMenus"
-            :rol="rolSeleccionado"
-        />
+        <rol-menus-dialog v-model="mostrarMenus" :rol="rolSeleccionado" />
 
     </v-container>
 </template>
