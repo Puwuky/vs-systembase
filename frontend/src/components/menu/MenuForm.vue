@@ -72,15 +72,23 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import MenuService from '../../api/menu.service'
+import { useMenuStore } from '../../store/menu.store.js'
 
+/* =========================
+   PROPS / EMITS
+========================= */
 const props = defineProps({
+  modelValue: Boolean,
   menu: Object,
   menus: Array
 })
 
-const emit = defineEmits(['cerrar', 'guardado'])
+const emit = defineEmits(['update:modelValue', 'guardado'])
 
-const open = ref(true)
+/* =========================
+   STATE
+========================= */
+const open = ref(false)
 
 const form = ref({
   titulo: '',
@@ -91,7 +99,17 @@ const form = ref({
   rolesIds: [1]
 })
 
-/* ✅ FIX CLAVE: mapear correctamente padreId */
+const { cargarMenuTree } = useMenuStore()
+
+/* =========================
+   SYNC DIALOG
+========================= */
+watch(() => props.modelValue, v => open.value = v)
+watch(open, v => emit('update:modelValue', v))
+
+/* =========================
+   WATCH MENU EDIT
+========================= */
 watch(
   () => props.menu,
   (m) => {
@@ -126,9 +144,11 @@ const padres = computed(() =>
   }))
 )
 
+/* =========================
+   METHODS
+========================= */
 function cerrar() {
   open.value = false
-  emit('cerrar')
 }
 
 async function guardar() {
@@ -137,8 +157,12 @@ async function guardar() {
   } else {
     await MenuService.crear(form.value)
   }
+
+  await cargarMenuTree()
   emit('guardado')
+  open.value = false
 }
+
 </script>
 
 <style scoped>

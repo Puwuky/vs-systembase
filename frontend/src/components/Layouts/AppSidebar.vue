@@ -60,9 +60,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import MenuService from '../../api/menu.service'
+import { useMenuStore } from '../../store/menu.store.js'
 
 /* =========================
    PROPS & EMITS
@@ -79,8 +79,13 @@ const emit = defineEmits(['update:drawer'])
 /* =========================
    STATE
 ========================= */
-const menu = ref([])
 const route = useRoute()
+const { state, cargarMenuTree } = useMenuStore()
+
+/* =========================
+   COMPUTED
+========================= */
+const menu = computed(() => state.tree)
 
 /* =========================
    METHODS
@@ -92,9 +97,10 @@ function isGroupOpen(item) {
 /* =========================
    LIFECYCLE
 ========================= */
-onMounted(async () => {
-  const response = await MenuService.getMenuTree()
-  menu.value = response.data
+onMounted(() => {
+  if (!state.tree.length) {
+    cargarMenuTree()
+  }
 })
 </script>
 

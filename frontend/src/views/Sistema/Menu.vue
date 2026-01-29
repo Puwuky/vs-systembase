@@ -30,7 +30,7 @@
     <MenuTable :menus="menus" @editar="editarMenu" />
 
     <!-- DIALOG -->
-    <MenuForm v-if="showForm" :menu="menuSeleccionado" :menus="menus" @cerrar="cerrarForm" @guardado="recargar" />
+    <MenuForm v-model="showForm" :menu="menuSeleccionado" :menus="menus" @guardado="recargar" />
 
   </v-container>
 </template>
@@ -42,10 +42,16 @@ import MenuService from '../../api/menu.service'
 import MenuTable from '../../components/menu/MenuTable.vue'
 import MenuForm from '../../components/menu/MenuForm.vue'
 
+/* =========================
+   STATE
+========================= */
 const menus = ref([])
 const showForm = ref(false)
 const menuSeleccionado = ref(null)
 
+/* =========================
+   METHODS
+========================= */
 async function cargarMenus() {
   const { data } = await MenuService.getMenuTree()
   menus.value = data
@@ -61,15 +67,14 @@ function editarMenu(menu) {
   showForm.value = true
 }
 
-function cerrarForm() {
-  showForm.value = false
-}
-
 async function recargar() {
   showForm.value = false
   await cargarMenus()
 }
 
+/* =========================
+   LIFECYCLE
+========================= */
 onMounted(cargarMenus)
 </script>
 
