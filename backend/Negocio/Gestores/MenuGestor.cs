@@ -2,6 +2,7 @@ using Backend.Data;
 using Backend.Models.Menu;
 using Backend.Models.Entidades;
 using Microsoft.EntityFrameworkCore;
+using Backend.Utils;
 
 namespace Backend.Negocio.Gestores
 {
@@ -37,11 +38,33 @@ namespace Backend.Negocio.Gestores
         {
             using var context = new SystemBaseContext();
 
+            var ruta = MenuViewGenerator.NormalizeRoute(request.Ruta);
+
+            if (request.PadreId != null && string.IsNullOrWhiteSpace(ruta))
+            {
+                var parentTitle = context.Menus
+                    .Where(m => m.Id == request.PadreId)
+                    .Select(m => m.Titulo)
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrWhiteSpace(parentTitle))
+                {
+                    var parentSlug = MenuViewGenerator.ToSlug(parentTitle);
+                    var childSlug = MenuViewGenerator.ToSlug(request.Titulo);
+                    ruta = $"/{parentSlug}/{childSlug}";
+                }
+                else
+                {
+                    var childSlug = MenuViewGenerator.ToSlug(request.Titulo);
+                    ruta = $"/{childSlug}";
+                }
+            }
+
             var menu = new Menus
             {
                 Titulo = request.Titulo,
                 Icono = request.Icono,
-                Ruta = request.Ruta,
+                Ruta = ruta,
                 Orden = request.Orden,
                 PadreId = request.PadreId,
                 Activo = true
@@ -56,6 +79,21 @@ namespace Backend.Negocio.Gestores
 
             context.Menus.Add(menu);
             context.SaveChanges();
+
+            if (menu.PadreId == null)
+            {
+                MenuViewGenerator.TryEnsureParentFolder(menu.Titulo);
+            }
+            else
+            {
+                var parentTitle = context.Menus
+                    .Where(m => m.Id == menu.PadreId)
+                    .Select(m => m.Titulo)
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrWhiteSpace(parentTitle))
+                    MenuViewGenerator.TryCreateChildView(parentTitle, menu.Titulo);
+            }
 
             return true;
         }
@@ -73,7 +111,9 @@ namespace Backend.Negocio.Gestores
 
             menu.Titulo = request.Titulo;
             menu.Icono = request.Icono;
-            menu.Ruta = request.Ruta;
+            menu.Ruta = string.IsNullOrWhiteSpace(request.Ruta)
+                ? menu.Ruta
+                : MenuViewGenerator.NormalizeRoute(request.Ruta);
             menu.Orden = request.Orden;
             menu.PadreId = request.PadreId;
 
