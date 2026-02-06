@@ -43,6 +43,7 @@
 
 <script>
 import rolService from '../../api/rol.service.js';
+import { useMenuStore } from '../../store/menu.store.js';
 
 export default {
     props: {
@@ -88,6 +89,8 @@ export default {
                 .map(m => Number(m.id));
 
             await rolService.asignarMenus(this.rol.id, menusIds);
+            const { cargarMenuTree } = useMenuStore();
+            await cargarMenuTree();
             this.cerrar();
         }
     }

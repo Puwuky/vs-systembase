@@ -88,6 +88,7 @@ namespace Backend.Negocio.Gestores
 
                 AplicarRelaciones(context, schemaName, system);
                 CrearMenusSistema(context, system);
+                CrearPermisosSistema(context, system);
 
                 system.Status = "published";
                 system.PublishedAt = DateTime.UtcNow;
@@ -282,6 +283,43 @@ END";
 
                 context.SystemMenus.Add(menu);
             }
+        }
+
+        private static void CrearPermisosSistema(SystemBaseContext context, Systems system)
+        {
+            foreach (var entity in system.Entities)
+            {
+                var entityName = entity.DisplayName ?? entity.Name;
+                foreach (var action in PermisosGestor.Actions)
+                {
+                    var key = PermisosGestor.BuildKey(entity.Id, action);
+                    var exists = context.Permissions.Any(p => p.SystemId == system.Id && p.Key == key);
+                    if (exists)
+                        continue;
+
+                    var permiso = new Permissions
+                    {
+                        SystemId = system.Id,
+                        Key = key,
+                        Description = $"{entityName} - {ActionLabel(action)}",
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    context.Permissions.Add(permiso);
+                }
+            }
+        }
+
+        private static string ActionLabel(string action)
+        {
+            return action switch
+            {
+                "view" => "Ver",
+                "create" => "Crear",
+                "edit" => "Editar",
+                "delete" => "Eliminar",
+                _ => action
+            };
         }
 
         private static string ToKebab(string value)

@@ -29,6 +29,30 @@ namespace Backend.Negocio.Gestores
                 .ToList();
         }
 
+        public static List<EntidadResponse> ObtenerParaRuntime(int systemId, int usuarioId)
+        {
+            using var context = new SystemBaseContext();
+
+            var allowed = PermisosGestor.ObtenerEntidadesPermitidas(context, usuarioId, systemId, "view");
+
+            return context.Entities
+                .Where(e => e.SystemId == systemId && allowed.Contains(e.Id))
+                .OrderBy(e => e.SortOrder)
+                .ThenBy(e => e.Id)
+                .Select(e => new EntidadResponse
+                {
+                    Id = e.Id,
+                    SystemId = e.SystemId,
+                    Name = e.Name,
+                    TableName = e.TableName,
+                    DisplayName = e.DisplayName,
+                    Description = e.Description,
+                    IsActive = e.IsActive,
+                    SortOrder = e.SortOrder
+                })
+                .ToList();
+        }
+
         public static EntidadResponse? ObtenerPorId(int systemId, int id)
         {
             using var context = new SystemBaseContext();

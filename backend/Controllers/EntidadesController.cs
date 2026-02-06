@@ -16,6 +16,17 @@ namespace Backend.Controllers
             return Ok(entidades);
         }
 
+        [HttpGet(Routes.v1.Entidades.ObtenerRuntime)]
+        public IActionResult ObtenerRuntime(int systemId)
+        {
+            var usuario = UsuarioToken();
+            if (usuario.UsuarioId == 0)
+                return Unauthorized();
+
+            var entidades = EntidadesGestor.ObtenerParaRuntime(systemId, usuario.UsuarioId);
+            return Ok(entidades);
+        }
+
         [HttpGet(Routes.v1.Entidades.ObtenerPorId)]
         public IActionResult ObtenerPorId(int systemId, int id)
         {

@@ -58,6 +58,35 @@
           </v-card-title>
           <v-divider />
 
+          <v-row class="px-4 py-2" dense>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="search"
+                label="Buscar"
+                clearable
+                prepend-inner-icon="mdi-magnify"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-select
+                v-model="filterField"
+                :items="filterFields"
+                item-title="title"
+                item-value="value"
+                label="Filtrar por"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="filterValue"
+                label="Valor"
+                :disabled="!filterField"
+                clearable
+              />
+            </v-col>
+          </v-row>
+
           <v-alert v-if="error" type="error" variant="tonal" class="ma-4">
             {{ error }}
           </v-alert>
@@ -73,7 +102,7 @@
           <v-data-table
             v-else
             :headers="headers"
-            :items="registros"
+            :items="paginatedRegistros"
             class="table"
             density="compact"
             hover
@@ -110,6 +139,20 @@
               </v-tooltip>
             </template>
           </v-data-table>
+
+          <v-row class="px-4 pb-4 pt-2 align-center" dense>
+            <v-col cols="12" md="4">
+              <v-select
+                v-model="itemsPerPage"
+                :items="itemsPerPageOptions"
+                label="Filas por pagina"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="8" class="d-flex justify-end">
+              <v-pagination v-model="page" :length="pageCount" density="compact" />
+            </v-col>
+          </v-row>
         </v-card>
       </v-col>
     </v-row>
@@ -122,6 +165,16 @@
       :system-id="sistema?.id"
       :entity-id="entidadSeleccionada?.id"
       @guardado="cargarDatos"
+      @crear-fk="abrirFkDialog"
+    />
+
+    <RegistroDialog
+      v-model="mostrarFkDialog"
+      :record="null"
+      :fields="fkDialogFields"
+      :system-id="sistema?.id"
+      :entity-id="fkEntityId"
+      @guardado="onFkGuardado"
     />
   </v-container>
 </template>
@@ -149,12 +202,21 @@ const loading = ref(false)
 const error = ref(null)
 const relaciones = ref([])
 const fkOptions = ref({})
+const mostrarFkDialog = ref(false)
+const fkDialogFields = ref([])
+const fkEntityId = ref(null)
 
 const mostrarDialog = ref(false)
 const registroSeleccionado = ref(null)
 
 const slug = computed(() => String(route.params.slug || ''))
 const entitySlug = computed(() => String(route.params.entity || ''))
+const search = ref('')
+const filterField = ref(null)
+const filterValue = ref('')
+const itemsPerPage = ref(10)
+const itemsPerPageOptions = [10, 20, 50, 100]
+const page = ref(1)
 
 const headers = computed(() => {
   if (!campos.value.length) return []
@@ -166,6 +228,49 @@ const headers = computed(() => {
   return cols
 })
 
+const filterFields = computed(() => {
+  return campos.value.map(field => ({
+    title: field.name || field.columnName,
+    value: field.columnName
+  }))
+})
+
+const filteredRegistros = computed(() => {
+  let items = [...(registros.value || [])]
+
+  if (search.value) {
+    const term = search.value.toString().toLowerCase()
+    items = items.filter(row =>
+      Object.values(row).some(value =>
+        value !== null &&
+        value !== undefined &&
+        value.toString().toLowerCase().includes(term)
+      )
+    )
+  }
+
+  if (filterField.value && filterValue.value) {
+    const term = filterValue.value.toString().toLowerCase()
+    items = items.filter(row => {
+      const value = row[filterField.value]
+      return value !== null && value !== undefined && value.toString().toLowerCase().includes(term)
+    })
+  }
+
+  return items
+})
+
+const pageCount = computed(() => {
+  const total = filteredRegistros.value.length
+  return total === 0 ? 1 : Math.ceil(total / itemsPerPage.value)
+})
+
+const paginatedRegistros = computed(() => {
+  const start = (page.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredRegistros.value.slice(start, end)
+})
+
 const pkField = computed(() => campos.value.find(field => field.isPrimaryKey))
 
 async function cargarSistema() {
@@ -175,7 +280,7 @@ async function cargarSistema() {
 
 async function cargarEntidades() {
   if (!sistema.value) return
-  const { data } = await entidadService.getBySystem(sistema.value.id)
+  const { data } = await entidadService.getBySystemRuntime(sistema.value.id)
   entidades.value = data
 }
 
@@ -218,6 +323,7 @@ async function cargarDatos() {
   if (!sistema.value || !entidadSeleccionada.value) return
   const { data } = await datosService.listar(sistema.value.id, entidadSeleccionada.value.id)
   registros.value = data
+  page.value = 1
 }
 
 function elegirDisplayField(fields, pkField) {
@@ -261,7 +367,8 @@ async function cargarFkOptions() {
       options,
       targetEntityId: target.id,
       pkField: pk.columnName,
-      displayField: display.columnName
+      displayField: display.columnName,
+      fields: targetFields
     }
   }
 }
@@ -289,6 +396,18 @@ async function inicializar() {
 
 function irEntidad(entidad) {
   router.push(`/s/${slug.value}/${toKebab(entidad.name)}`)
+}
+
+function abrirFkDialog(field) {
+  const meta = fkOptions.value?.[field.columnName]
+  if (!meta) return
+  fkEntityId.value = meta.targetEntityId
+  fkDialogFields.value = meta.fields || []
+  mostrarFkDialog.value = true
+}
+
+async function onFkGuardado() {
+  await cargarFkOptions()
 }
 
 function nuevoRegistro() {
@@ -325,6 +444,16 @@ async function eliminarRegistro(item) {
 function volver() {
   router.push('/sistemas')
 }
+
+watch([search, filterField, filterValue, itemsPerPage], () => {
+  page.value = 1
+})
+
+watch(filteredRegistros, () => {
+  if (page.value > pageCount.value) {
+    page.value = pageCount.value
+  }
+})
 
 watch(
   () => [slug.value, entitySlug.value],

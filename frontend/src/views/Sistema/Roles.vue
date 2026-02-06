@@ -27,14 +27,23 @@
         </v-row>
 
         <!-- TABLA -->
-        <roles-table :roles="roles" :headers="headers" @editar="editarRol" @menus="abrirMenus"
-            @cambiar-estado="cambiarEstado" />
+        <roles-table
+            :roles="roles"
+            :headers="headers"
+            @editar="editarRol"
+            @menus="abrirMenus"
+            @system-menus="abrirSystemMenus"
+            @permisos="abrirPermisos"
+            @cambiar-estado="cambiarEstado"
+        />
 
         <!-- DIALOG CREAR / EDITAR -->
         <rol-dialog v-model="mostrarDialog" :rol="rolSeleccionado" @guardado="cargarRoles" />
 
         <!-- DIALOG MENUS -->
         <rol-menus-dialog v-model="mostrarMenus" :rol="rolSeleccionado" />
+        <rol-system-menus-dialog v-model="mostrarSystemMenus" :rol="rolSeleccionado" />
+        <rol-permisos-dialog v-model="mostrarPermisos" :rol="rolSeleccionado" />
 
     </v-container>
 </template>
@@ -43,6 +52,8 @@
 import RolesTable from '../../components/roles/RolesTable.vue';
 import RolDialog from '../../components/roles/RolDialog.vue';
 import RolMenusDialog from '../../components/roles/RolMenusDialog.vue';
+import RolSystemMenusDialog from '../../components/roles/RolSystemMenusDialog.vue';
+import RolPermisosDialog from '../../components/roles/RolPermisosDialog.vue';
 import rolService from '../../api/rol.service.js';
 
 const COLUMN_TITLES = {
@@ -54,7 +65,9 @@ export default {
     components: {
         RolesTable,
         RolDialog,
-        RolMenusDialog
+        RolMenusDialog,
+        RolSystemMenusDialog,
+        RolPermisosDialog
     },
 
     data() {
@@ -63,7 +76,9 @@ export default {
             headers: [],
             rolSeleccionado: null,
             mostrarDialog: false,
-            mostrarMenus: false
+            mostrarMenus: false,
+            mostrarSystemMenus: false,
+            mostrarPermisos: false
         };
     },
 
@@ -104,6 +119,16 @@ export default {
         abrirMenus(rol) {
             this.rolSeleccionado = rol;
             this.mostrarMenus = true;
+        },
+
+        abrirSystemMenus(rol) {
+            this.rolSeleccionado = rol;
+            this.mostrarSystemMenus = true;
+        },
+
+        abrirPermisos(rol) {
+            this.rolSeleccionado = rol;
+            this.mostrarPermisos = true;
         },
 
         async cambiarEstado(rol) {

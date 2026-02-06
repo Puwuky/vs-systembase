@@ -42,6 +42,24 @@
                         </v-btn>
                     </template>
                 </v-tooltip>
+
+                <v-tooltip text="Asignar sistemas">
+                    <template #activator="{ props }">
+                        <v-btn v-bind="props" icon size="small" color="teal" variant="text"
+                            @click="$emit('system-menus', item)">
+                            <v-icon>mdi-apps</v-icon>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+
+                <v-tooltip text="Permisos">
+                    <template #activator="{ props }">
+                        <v-btn v-bind="props" icon size="small" color="indigo" variant="text"
+                            @click="$emit('permisos', item)">
+                            <v-icon>mdi-shield-key</v-icon>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
             </template>
         </v-data-table>
     </v-card>

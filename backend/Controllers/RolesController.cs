@@ -64,5 +64,45 @@ namespace Backend.Controllers
 
             return Ok();
         }
+
+        [HttpGet(Routes.v1.Roles.ObtenerSystemMenus)]
+        public IActionResult ObtenerSystemMenus(int id)
+        {
+            var menus = RolesGestor.ObtenerSystemMenusPorRol(id);
+            if (menus == null)
+                return NotFound();
+
+            return Ok(menus);
+        }
+
+        [HttpPut(Routes.v1.Roles.AsignarSystemMenus)]
+        public IActionResult AsignarSystemMenus(int id, [FromBody] RolSystemMenusRequest request)
+        {
+            var ok = RolesGestor.AsignarSystemMenus(id, request.SystemIds);
+            if (!ok)
+                return NotFound();
+
+            return Ok();
+        }
+
+        [HttpGet(Routes.v1.Roles.ObtenerPermisos)]
+        public IActionResult ObtenerPermisos(int id, int systemId)
+        {
+            var permisos = RolesGestor.ObtenerPermisosPorRol(id, systemId);
+            if (permisos == null)
+                return NotFound();
+
+            return Ok(permisos);
+        }
+
+        [HttpPut(Routes.v1.Roles.AsignarPermisos)]
+        public IActionResult AsignarPermisos(int id, int systemId, [FromBody] RolPermissionsRequest request)
+        {
+            var ok = RolesGestor.AsignarPermisos(id, systemId, request.PermissionIds);
+            if (!ok)
+                return NotFound();
+
+            return Ok();
+        }
     }
 }

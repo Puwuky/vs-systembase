@@ -25,6 +25,8 @@
                 :label="field.columnName"
                 clearable
                 no-data-text="Sin registros"
+                append-inner-icon="mdi-plus"
+                @click:append-inner="crearFk(field)"
               />
 
               <v-text-field
@@ -90,7 +92,7 @@ export default {
     entityId: Number
   },
 
-  emits: ['update:modelValue', 'guardado'],
+  emits: ['update:modelValue', 'guardado', 'crear-fk'],
 
   data() {
     return {
@@ -152,6 +154,10 @@ export default {
   },
 
   methods: {
+    crearFk(field) {
+      this.$emit('crear-fk', field);
+    },
+
     guardar() {
       const payload = { ...this.form };
 
@@ -167,6 +173,13 @@ export default {
       req.then(() => {
         this.$emit('guardado');
         this.cerrar();
+      }).catch(error => {
+        const message =
+          error?.response?.data?.message ||
+          error?.response?.data ||
+          error?.message ||
+          'Error al guardar.';
+        window.alert(message);
       });
     },
 

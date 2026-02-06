@@ -44,7 +44,8 @@ const routes = [
       },
       {
         path: 'sistemas/:id',
-        component: SistemaEditor
+        component: SistemaEditor,
+        meta: { menuBase: '/sistemas' }
       },
       {
         path: 's/:slug',

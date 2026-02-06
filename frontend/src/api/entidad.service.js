@@ -5,6 +5,10 @@ export default {
     return api.get(`/sistemas/${systemId}/entidades`);
   },
 
+  getBySystemRuntime(systemId) {
+    return api.get(`/sistemas/${systemId}/entidades/runtime`);
+  },
+
   getById(systemId, id) {
     return api.get(`/sistemas/${systemId}/entidades/${id}`);
   },

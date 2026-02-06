@@ -28,6 +28,10 @@ namespace Backend
                 public const string Editar = "api/v1/roles/{id}";
                 public const string Estado = "api/v1/roles/{id}/estado";
                 public const string AsignarMenus = "api/v1/roles/{id}/menus";
+                public const string ObtenerSystemMenus = "api/v1/roles/{id}/system-menus";
+                public const string AsignarSystemMenus = "api/v1/roles/{id}/system-menus";
+                public const string ObtenerPermisos = "api/v1/roles/{id}/permissions/{systemId}";
+                public const string AsignarPermisos = "api/v1/roles/{id}/permissions/{systemId}";
             }
 
             public static class Usuarios
@@ -52,6 +56,7 @@ namespace Backend
             public static class Entidades
             {
                 public const string Obtener = "api/v1/sistemas/{systemId}/entidades";
+                public const string ObtenerRuntime = "api/v1/sistemas/{systemId}/entidades/runtime";
                 public const string ObtenerPorId = "api/v1/sistemas/{systemId}/entidades/{id}";
                 public const string ObtenerPorNombre = "api/v1/sistemas/{systemId}/entidades/by-name/{name}";
                 public const string Crear = "api/v1/sistemas/{systemId}/entidades";

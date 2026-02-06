@@ -27,5 +27,25 @@ export default {
         return api.put(`/roles/${id}/menus`, {
             menusIds
         });
+    },
+
+    getSystemMenus(id) {
+        return api.get(`/roles/${id}/system-menus`);
+    },
+
+    asignarSystemMenus(id, systemIds) {
+        return api.put(`/roles/${id}/system-menus`, {
+            systemIds
+        });
+    },
+
+    getPermissions(id, systemId) {
+        return api.get(`/roles/${id}/permissions/${systemId}`);
+    },
+
+    asignarPermissions(id, systemId, permissionIds) {
+        return api.put(`/roles/${id}/permissions/${systemId}`, {
+            permissionIds
+        });
     }
 };
