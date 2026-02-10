@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-02-09T15:30:13.779012Z",
+  "basePort": 5032,
+  "systems": [
+    {
+      "id": 1,
+      "slug": "inventario",
+      "name": "Sistema de Inventario",
+      "port": 5033,
+      "baseUrl": "http://localhost:5033"
+    }
+  ]
+}

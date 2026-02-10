@@ -23,5 +23,35 @@ export default {
 
   publicar(id) {
     return api.post(`/sistemas/${id}/publicar`);
+  },
+
+  exportarZip(id) {
+    return api.post(`/sistemas/${id}/export?mode=zip`, null, { responseType: 'blob' });
+  },
+
+  exportarWorkspace(id, overwrite = false) {
+    const flag = overwrite ? 'true' : 'false'
+    return api.post(`/sistemas/${id}/export?mode=workspace&overwrite=${flag}`);
+  },
+
+  generarBackend(id, overwrite = false) {
+    const flag = overwrite ? 'true' : 'false'
+    return api.post(`/sistemas/${id}/generar-backend?overwrite=${flag}`);
+  },
+
+  iniciarBackend(id) {
+    return api.post(`/sistemas/${id}/backend/start`);
+  },
+
+  detenerBackend(id) {
+    return api.post(`/sistemas/${id}/backend/stop`);
+  },
+
+  pingBackend(id) {
+    return api.get(`/sistemas/${id}/backend/ping`);
+  },
+
+  logsBackend(id, after = 0, take = 200) {
+    return api.get(`/sistemas/${id}/backend/logs`, { params: { after, take } });
   }
 };

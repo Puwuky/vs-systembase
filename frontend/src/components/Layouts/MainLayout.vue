@@ -7,8 +7,10 @@
       @update:drawer="drawer = $event"
     />
 
-    <v-main>
-      <router-view />
+    <v-main class="app-main">
+      <div class="app-scroll">
+        <router-view />
+      </div>
     </v-main>
   </v-app>
 </template>
@@ -98,3 +100,16 @@ watch(
   { deep: true }
 )
 </script>
+
+<style scoped>
+.app-main {
+  height: calc(100vh - var(--v-layout-top));
+  overflow: hidden;
+}
+
+.app-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+}
+</style>

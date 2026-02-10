@@ -73,6 +73,54 @@
               </v-btn>
             </template>
           </v-tooltip>
+
+          <v-tooltip text="Exportar ZIP">
+            <template #activator="{ props }">
+              <v-btn
+                v-if="isAdmin"
+                v-bind="props"
+                icon
+                size="small"
+                color="blue"
+                variant="text"
+                @click="exportarZip(item)"
+              >
+                <v-icon>mdi-download</v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <v-tooltip text="Generar carpeta">
+            <template #activator="{ props }">
+              <v-btn
+                v-if="isAdmin"
+                v-bind="props"
+                icon
+                size="small"
+                color="indigo"
+                variant="text"
+                @click="exportarWorkspace(item)"
+              >
+                <v-icon>mdi-folder</v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <v-tooltip text="Generar Backend">
+            <template #activator="{ props }">
+              <v-btn
+                v-if="isAdmin"
+                v-bind="props"
+                icon
+                size="small"
+                color="deep-purple"
+                variant="text"
+                @click="generarBackend(item)"
+              >
+                <v-icon>mdi-cog-sync</v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
         </template>
       </v-data-table>
     </v-card>
@@ -87,6 +135,7 @@ import { useRouter } from 'vue-router'
 import sistemaService from '../../api/sistema.service.js'
 import SistemaDialog from '../../components/sistemas/SistemaDialog.vue'
 import { useMenuStore } from '../../store/menu.store.js'
+import usuarioService from '../../api/usuario.service.js'
 
 const router = useRouter()
 const { cargarMenuTree } = useMenuStore()
@@ -104,6 +153,50 @@ const headers = [
   { title: 'Activo', key: 'isActive' },
   { title: 'Acciones', key: 'actions', sortable: false }
 ]
+
+const isAdmin = ref(false)
+
+function decodeJwtPayload(token) {
+  if (!token) return null
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+        .join('')
+    )
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
+
+function getUsuarioIdFromToken() {
+  const token = localStorage.getItem('token')
+  const payload = decodeJwtPayload(token)
+  const id = payload?.usuarioId
+  return id ? Number(id) : null
+}
+
+async function cargarPerfilAdmin() {
+  const usuarioId = getUsuarioIdFromToken()
+  if (!usuarioId) {
+    isAdmin.value = false
+    return
+  }
+
+  try {
+    const { data } = await usuarioService.obtenerPorId(usuarioId)
+    const rol = data?.rol || data?.Rol || ''
+    const username = data?.username || data?.Username || ''
+    isAdmin.value = String(rol).toLowerCase() === 'admin' || String(username).toLowerCase() === 'admin'
+  } catch {
+    isAdmin.value = false
+  }
+}
 
 async function cargarSistemas() {
   const { data } = await sistemaService.getAll()
@@ -141,7 +234,127 @@ async function publicar(item) {
   }
 }
 
-onMounted(cargarSistemas)
+async function exportarZip(item) {
+  const ok = window.confirm(`Exportar ZIP del sistema ${item.name}?`)
+  if (!ok) return
+
+  try {
+    const response = await sistemaService.exportarZip(item.id)
+    const blob = new Blob([response.data], { type: 'application/zip' })
+    const url = window.URL.createObjectURL(blob)
+
+    const disposition = response.headers?.['content-disposition']
+    let fileName = `${item.slug || 'system'}-export.zip`
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^"]+)"?/)
+      if (match && match[1]) fileName = match[1]
+    }
+
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    let message = 'Error al exportar el sistema.'
+    const data = error?.response?.data
+
+    if (data instanceof Blob) {
+      try {
+        const text = await data.text()
+        const parsed = JSON.parse(text)
+        message = parsed?.message || parsed?.Message || message
+      } catch {
+        // ignore parsing errors
+      }
+    } else {
+      message = data?.message || data?.Message || message
+    }
+
+    window.alert(message)
+  }
+}
+
+async function exportarWorkspace(item) {
+  const ok = window.confirm(`Generar carpeta del sistema ${item.name} en /systems?`)
+  if (!ok) return
+
+  try {
+    const { data } = await sistemaService.exportarWorkspace(item.id, false)
+    const exportPath = data?.exportPath || data?.ExportPath
+    window.alert(`Carpeta generada en:\n${exportPath}`)
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.Message ||
+      'Error al generar la carpeta.'
+
+    if (message.includes('overwrite=true')) {
+      const overwrite = window.confirm(`${message}\n\nDeseas reemplazarla?`)
+      if (overwrite) {
+        try {
+          const { data } = await sistemaService.exportarWorkspace(item.id, true)
+          const exportPath = data?.exportPath || data?.ExportPath
+          window.alert(`Carpeta generada en:\n${exportPath}`)
+          return
+        } catch (innerError) {
+          const innerMessage =
+            innerError?.response?.data?.message ||
+            innerError?.response?.data?.Message ||
+            'Error al reemplazar la carpeta.'
+          window.alert(innerMessage)
+          return
+        }
+      }
+    }
+
+    window.alert(message)
+  }
+}
+
+async function generarBackend(item) {
+  const ok = window.confirm(`Generar backend para ${item.name}?`)
+  if (!ok) return
+
+  try {
+    const { data } = await sistemaService.generarBackend(item.id, false)
+    const outputPath = data?.outputPath || data?.OutputPath
+    window.alert(`Backend generado en:\n${outputPath}`)
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.Message ||
+      'Error al generar backend.'
+
+    if (message.includes('overwrite=true')) {
+      const overwrite = window.confirm(`${message}\n\nDeseas reemplazarlo?`)
+      if (overwrite) {
+        try {
+          const { data } = await sistemaService.generarBackend(item.id, true)
+          const outputPath = data?.outputPath || data?.OutputPath
+          window.alert(`Backend generado en:\n${outputPath}`)
+          return
+        } catch (innerError) {
+          const innerMessage =
+            innerError?.response?.data?.message ||
+            innerError?.response?.data?.Message ||
+            'Error al reemplazar el backend.'
+          window.alert(innerMessage)
+          return
+        }
+      }
+    }
+
+    window.alert(message)
+  }
+}
+
+onMounted(async () => {
+  await cargarPerfilAdmin()
+  await cargarSistemas()
+})
 </script>
 
 <style scoped>

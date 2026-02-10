@@ -1,182 +1,1163 @@
 <template>
   <v-container fluid>
-    <v-row class="mb-4 align-center">
+    <v-row class="mb-4 align-center designer-header">
       <v-col>
         <div class="d-flex align-center">
-          <v-icon class="mr-2" color="primary" size="28">mdi-vector-square</v-icon>
+          <div class="designer-icon">
+            <v-icon color="primary" size="26">mdi-vector-square</v-icon>
+          </div>
           <div>
             <h2 class="mb-1">Disenador</h2>
-            <span class="grey--text text-body-2">
-              {{ sistema?.name || 'Sistema' }} ({{ sistema?.slug || '-' }})
-            </span>
+            <div class="d-flex align-center flex-wrap ga-2">
+              <span class="designer-subtitle text-body-2">
+                {{ sistema?.name || 'Sistema' }}
+              </span>
+              <v-chip size="x-small" color="primary" variant="tonal">
+                {{ sistema?.slug || '-' }}
+              </v-chip>
+            </div>
           </div>
         </div>
       </v-col>
       <v-col cols="auto" class="d-flex ga-2">
-        <v-btn variant="text" @click="volver">
+        <v-btn variant="tonal" color="primary" @click="volver">
           <v-icon left>mdi-arrow-left</v-icon>
           Volver
         </v-btn>
-        <v-btn color="green" @click="publicarSistema">
-          <v-icon left>mdi-rocket-launch</v-icon>
-          Publicar
-        </v-btn>
       </v-col>
     </v-row>
 
-    <v-row>
-      <v-col cols="12" md="6">
-        <v-card elevation="2" class="card">
-          <v-card-title class="d-flex align-center justify-space-between">
-            <div class="d-flex align-center">
-              <v-icon class="mr-2" color="primary">mdi-table</v-icon>
-              <span class="text-h6 font-weight-medium">Entidades</span>
-            </div>
-            <v-btn color="primary" size="small" @click="nuevaEntidad">
-              <v-icon left>mdi-plus</v-icon>
-              Nueva entidad
-            </v-btn>
-          </v-card-title>
+    <v-tabs v-model="tab" class="mb-4 designer-tabs">
+      <v-tab value="datos">
+        <v-icon class="mr-2" size="18">mdi-database</v-icon>
+        Datos
+      </v-tab>
+      <v-tab value="backend">
+        <v-icon class="mr-2" size="18">mdi-cogs</v-icon>
+        Backend
+      </v-tab>
+      <v-tab value="herramientas">
+        <v-icon class="mr-2" size="18">mdi-tools</v-icon>
+        Herramientas
+      </v-tab>
+    </v-tabs>
 
-          <v-divider />
-
-          <v-data-table :headers="headersEntidades" :items="entidades" class="table" density="compact" hover>
-            <template #item.isActive="{ item }">
-              <v-chip size="small" :color="item.isActive ? 'green' : 'grey'">
-                {{ item.isActive ? 'Activo' : 'Inactivo' }}
-              </v-chip>
-            </template>
-
-            <template #item.actions="{ item }">
-              <v-tooltip text="Seleccionar">
-                <template #activator="{ props }">
-                  <v-btn v-bind="props" icon size="small" color="secondary" variant="text"
-                    @click="seleccionarEntidad(item)">
-                    <v-icon>mdi-database-search</v-icon>
+    <v-window v-model="tab">
+      <v-window-item value="datos">
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-table</v-icon>
+                  <span class="text-h6 font-weight-medium">Entidades</span>
+                </div>
+                <div class="d-flex ga-2">
+                  <v-btn color="primary" size="small" @click="nuevaEntidad">
+                    <v-icon left>mdi-plus</v-icon>
+                    Nueva entidad
                   </v-btn>
-                </template>
-              </v-tooltip>
+                  <v-tooltip text="Crea/actualiza las tablas del sistema">
+                    <template #activator="{ props }">
+                      <v-btn v-bind="props" color="green" size="small" @click="publicarSistema">
+                        <v-icon left>mdi-rocket-launch</v-icon>
+                        Publicar DB
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </div>
+              </v-card-title>
 
-              <v-tooltip text="Datos">
-                <template #activator="{ props }">
+              <v-divider />
+
+              <v-data-table :headers="headersEntidades" :items="entidades" class="table" density="compact" hover>
+                <template #item.isActive="{ item }">
+                  <v-chip size="small" :color="item.isActive ? 'green' : 'grey'">
+                    {{ item.isActive ? 'Activo' : 'Inactivo' }}
+                  </v-chip>
+                </template>
+
+                <template #item.actions="{ item }">
+                  <v-tooltip text="Seleccionar">
+                    <template #activator="{ props }">
+                      <v-btn v-bind="props" icon size="small" color="secondary" variant="text"
+                        @click="seleccionarEntidad(item)">
+                        <v-icon>mdi-database-search</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+
+                  <v-tooltip text="Datos">
+                    <template #activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        icon
+                        size="small"
+                        color="teal"
+                        variant="text"
+                        @click="verDatos(item)"
+                      >
+                        <v-icon>mdi-table</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+
+                  <v-tooltip text="Editar">
+                    <template #activator="{ props }">
+                      <v-btn v-bind="props" icon size="small" color="primary" variant="text"
+                        @click="editarEntidad(item)">
+                        <v-icon>mdi-pencil</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
+              </v-data-table>
+            </v-card>
+          </v-col>
+
+          <v-col cols="12" md="6">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-form-textbox</v-icon>
+                  <span class="text-h6 font-weight-medium">Campos</span>
+                </div>
+                <v-btn color="primary" size="small" :disabled="!entidadSeleccionada" @click="nuevoCampo">
+                  <v-icon left>mdi-plus</v-icon>
+                  Nuevo campo
+                </v-btn>
+              </v-card-title>
+
+              <v-divider />
+
+              <div v-if="!entidadSeleccionada" class="empty-state">
+                Selecciona una entidad para ver sus campos.
+              </div>
+
+              <v-data-table v-else :headers="headersCampos" :items="campos" class="table" density="compact" hover>
+                <template #item.required="{ item }">
+                  <v-chip size="small" :color="item.required ? 'green' : 'grey'">
+                    {{ item.required ? 'Si' : 'No' }}
+                  </v-chip>
+                </template>
+
+                <template #item.isPrimaryKey="{ item }">
+                  <v-chip size="small" :color="item.isPrimaryKey ? 'primary' : 'grey'">
+                    {{ item.isPrimaryKey ? 'PK' : '-' }}
+                  </v-chip>
+                </template>
+
+                <template #item.actions="{ item }">
+                  <v-tooltip text="Editar">
+                    <template #activator="{ props }">
+                      <v-btn v-bind="props" icon size="small" color="primary" variant="text"
+                        @click="editarCampo(item)">
+                        <v-icon>mdi-pencil</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
+              </v-data-table>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <v-row class="mt-4">
+          <v-col cols="12">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-link-variant</v-icon>
+                  <span class="text-h6 font-weight-medium">Relaciones</span>
+                </div>
+                <v-btn color="primary" size="small" @click="nuevaRelacion">
+                  <v-icon left>mdi-plus</v-icon>
+                  Nueva relacion
+                </v-btn>
+              </v-card-title>
+
+              <v-divider />
+
+              <v-data-table :headers="headersRelaciones" :items="relaciones" class="table" density="compact" hover>
+                <template #item.sourceEntityId="{ item }">
+                  {{ entidadNombre(item.sourceEntityId) }}
+                </template>
+
+                <template #item.targetEntityId="{ item }">
+                  {{ entidadNombre(item.targetEntityId) }}
+                </template>
+
+                <template #item.cascadeDelete="{ item }">
+                  <v-chip size="small" :color="item.cascadeDelete ? 'red' : 'grey'">
+                    {{ item.cascadeDelete ? 'Si' : 'No' }}
+                  </v-chip>
+                </template>
+
+                <template #item.actions="{ item }">
+                  <v-tooltip text="Editar">
+                    <template #activator="{ props }">
+                      <v-btn v-bind="props" icon size="small" color="primary" variant="text"
+                        @click="editarRelacion(item)">
+                        <v-icon>mdi-pencil</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </template>
+              </v-data-table>
+            </v-card>
+          </v-col>
+        </v-row>
+
+      </v-window-item>
+
+      <v-window-item value="herramientas">
+        <v-row class="mt-2">
+          <v-col cols="12">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-tools</v-icon>
+                  <span class="text-h6 font-weight-medium">Herramientas</span>
+                </div>
+                <div class="d-flex align-center ga-2">
+                  <v-chip size="small" :color="backendHealthColor" variant="tonal">
+                    Backend: {{ backendHealthLabel }}
+                  </v-chip>
+                  <v-btn size="x-small" variant="text" color="primary" @click="checkBackendHealth">
+                    <v-icon left size="16">mdi-refresh</v-icon>
+                    Actualizar
+                  </v-btn>
                   <v-btn
-                    v-bind="props"
-                    icon
+                    v-if="backendHealth.status !== 'online'"
+                    color="blue"
                     size="small"
-                    color="teal"
-                    variant="text"
-                    @click="verDatos(item)"
+                    @click="iniciarBackend"
                   >
-                    <v-icon>mdi-table</v-icon>
+                    <v-icon left>mdi-play</v-icon>
+                    Iniciar backend
+                  </v-btn>
+                  <v-btn
+                    v-if="backendHealth.status === 'online'"
+                    color="red"
+                    size="small"
+                    @click="detenerBackend"
+                  >
+                    <v-icon left>mdi-stop</v-icon>
+                    Detener backend
+                  </v-btn>
+                  <v-btn color="orange" size="small" @click="reiniciarBackend">
+                    <v-icon left>mdi-restart</v-icon>
+                    Reiniciar backend
+                  </v-btn>
+                </div>
+              </v-card-title>
+
+              <v-divider />
+
+              <v-card-text>
+                <v-dialog v-model="restartDialog.open" max-width="420">
+                  <v-card>
+                    <v-card-title>Backend</v-card-title>
+                    <v-card-text>
+                      <div class="mb-2">{{ restartDialog.message }}</div>
+                      <v-progress-linear
+                        v-if="restartDialog.status === 'restarting' || restartDialog.status === 'waiting'"
+                        indeterminate
+                        color="primary"
+                      />
+                      <v-alert v-if="restartDialog.status === 'online'" type="success" variant="tonal" class="mt-3">
+                        Backend listo.
+                      </v-alert>
+                      <v-alert v-if="restartDialog.status === 'error' || restartDialog.status === 'timeout'" type="error" variant="tonal" class="mt-3">
+                        No pudimos confirmar el reinicio.
+                      </v-alert>
+                    </v-card-text>
+                    <v-card-actions>
+                      <v-spacer />
+                      <v-btn variant="text" @click="restartDialog.open = false">Cerrar</v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
+
+                <v-alert type="info" variant="tonal" class="mb-4">
+                  Para que el reinicio funcione, ejecuta el backend con
+                  <span class="mono">dotnet watch run</span>.
+                </v-alert>
+
+                <v-alert type="info" variant="tonal" class="mb-4">
+                  <div class="text-body-2 font-weight-medium mb-1">Como probar una API</div>
+                  <div class="text-body-2">1. Elige una ruta en "APIs generadas".</div>
+                  <div class="text-body-2">2. Revisa el Path y usa el ejemplo si es POST/PUT.</div>
+                  <div class="text-body-2">3. Presiona Enviar y mira el response.</div>
+                </v-alert>
+
+                <div class="text-subtitle-2 mb-2">Puertos</div>
+                <v-row class="mb-4">
+                  <v-col cols="12" md="6">
+                    <v-card elevation="1" class="port-card">
+                      <v-card-title class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-icon class="mr-2" color="primary">mdi-server</v-icon>
+                          <span class="text-body-2 font-weight-medium">SystemBase backend</span>
+                        </div>
+                        <v-btn
+                          size="x-small"
+                          variant="text"
+                          color="primary"
+                          @click="copiarTexto(systembaseBaseUrl, 'URL de SystemBase')"
+                        >
+                          <v-icon left size="16">mdi-content-copy</v-icon>
+                          Copiar
+                        </v-btn>
+                      </v-card-title>
+                      <v-card-text class="pt-0">
+                        <div class="mono port-value">{{ systembaseBaseUrl }}</div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-card elevation="1" class="port-card">
+                      <v-card-title class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-icon class="mr-2" color="primary">mdi-server-network</v-icon>
+                          <span class="text-body-2 font-weight-medium">Backend del sistema</span>
+                        </div>
+                        <v-btn
+                          size="x-small"
+                          variant="text"
+                          color="primary"
+                          @click="copiarTexto(backendBaseUrl, 'URL del backend')"
+                        >
+                          <v-icon left size="16">mdi-content-copy</v-icon>
+                          Copiar
+                        </v-btn>
+                      </v-card-title>
+                      <v-card-text class="pt-0">
+                        <div class="mono port-value">{{ backendBaseUrl }}</div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-card elevation="1" class="port-card">
+                      <v-card-title class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-icon class="mr-2" color="primary">mdi-file-document-outline</v-icon>
+                          <span class="text-body-2 font-weight-medium">Registro de puertos</span>
+                        </div>
+                        <v-btn
+                          size="x-small"
+                          variant="text"
+                          color="primary"
+                          @click="copiarTexto(portsFilePath, 'Ruta de ports.json')"
+                        >
+                          <v-icon left size="16">mdi-content-copy</v-icon>
+                          Copiar
+                        </v-btn>
+                      </v-card-title>
+                      <v-card-text class="pt-0">
+                        <div class="mono port-value">{{ portsFilePath }}</div>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+
+                <v-card elevation="1" class="mb-4">
+                  <v-card-title class="d-flex align-center justify-space-between">
+                    <div class="d-flex align-center">
+                      <v-icon class="mr-2" color="primary">mdi-console-line</v-icon>
+                      <span class="text-subtitle-2 font-weight-medium">Consola backend</span>
+                    </div>
+                    <div class="d-flex align-center ga-3">
+                      <v-switch
+                        v-model="backendLogs.autoScroll"
+                        color="green"
+                        :base-color="'grey'"
+                        density="compact"
+                        hide-details
+                        label="Auto-scroll"
+                      />
+                      <v-btn size="x-small" variant="text" color="primary" @click="cargarBackendLogs(true)">
+                        <v-icon left size="16">mdi-refresh</v-icon>
+                        Actualizar
+                      </v-btn>
+                      <v-btn size="x-small" variant="text" color="primary" @click="limpiarBackendLogs">
+                        Limpiar
+                      </v-btn>
+                    </div>
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text>
+                    <div ref="backendLogRef" class="backend-console mono">
+                      <div v-if="!backendLogs.entries.length" class="text-caption text-medium-emphasis">
+                        Aún no hay logs del backend.
+                      </div>
+                      <div
+                        v-for="entry in backendLogs.entries"
+                        :key="entry.id"
+                        :class="[
+                          'backend-log-line',
+                          entry.level === 'stderr' ? 'backend-log-error' : '',
+                          entry.level === 'stdout' ? 'backend-log-stdout' : ''
+                        ]"
+                      >
+                        <span class="backend-log-time">{{ formatLogTime(entry.timestamp) }}</span>
+                        <span class="backend-log-level">[{{ entry.level }}]</span>
+                        <span class="backend-log-message">{{ entry.message }}</span>
+                      </div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+
+                <div class="text-subtitle-2 mb-2">APIs generadas</div>
+                <v-row class="mb-2">
+                  <v-col cols="12" md="5">
+                    <v-text-field
+                      v-model="apiRouteFilterText"
+                      label="Buscar por path o nombre"
+                      density="compact"
+                      prepend-inner-icon="mdi-magnify"
+                      clearable
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="apiRouteFilterMethod"
+                      :items="apiMethodOptions"
+                      item-title="title"
+                      item-value="value"
+                      label="Metodo"
+                      density="compact"
+                      clearable
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3" class="d-flex align-center text-caption text-medium-emphasis">
+                    Mostrando {{ filteredApiRoutes.length }} de {{ apiRouteOptions.length }}
+                  </v-col>
+                </v-row>
+                <v-data-table
+                  :headers="headersApiRoutes"
+                  :items="filteredApiRoutes"
+                  class="table mb-4"
+                  density="compact"
+                  hover
+                >
+                  <template #item.method="{ item }">
+                    <v-chip size="small" :color="apiMethodColor(item.method)" variant="tonal" class="text-uppercase">
+                      {{ item.method }}
+                    </v-chip>
+                  </template>
+                  <template #item.path="{ item }">
+                    <span class="mono">{{ item.path }}</span>
+                  </template>
+                  <template #item.actions="{ item }">
+                    <v-btn size="small" variant="text" color="primary" @click="usarApiRoute(item)">
+                      Usar en consola
+                    </v-btn>
+                    <v-btn size="small" variant="text" color="secondary" @click="configurarApi(item)">
+                      Configurar
+                    </v-btn>
+                  </template>
+                </v-data-table>
+
+                <v-card elevation="1" class="mb-4">
+                  <v-card-title class="d-flex align-center justify-space-between">
+                    <div class="d-flex align-center">
+                      <v-icon class="mr-2" color="primary">mdi-api</v-icon>
+                      <span class="text-subtitle-2 font-weight-medium">Consola API</span>
+                    </div>
+                    <v-btn color="primary" size="small" @click="enviarApiConsole">
+                      <v-icon left>mdi-send</v-icon>
+                      Enviar
+                    </v-btn>
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text>
+                    <div class="text-caption text-medium-emphasis mb-2">Request</div>
+                    <v-row>
+                      <v-col cols="12" md="4">
+                        <v-text-field v-model="apiConsole.baseUrl" label="Base URL" density="compact" />
+                      </v-col>
+                      <v-col cols="12" md="4">
+                        <v-select
+                          v-model="apiRouteSeleccionada"
+                          :items="apiRouteOptions"
+                          item-title="title"
+                          :return-object="true"
+                          label="Ruta sugerida"
+                          density="compact"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="2">
+                        <v-select
+                          v-model="apiConsole.method"
+                          :items="['GET','POST','PUT','DELETE']"
+                          label="Metodo"
+                          density="compact"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="2">
+                        <v-tooltip text="Usa el token guardado en localStorage">
+                          <template #activator="{ props }">
+                            <div v-bind="props">
+                              <v-checkbox v-model="apiConsole.sendToken" label="Enviar token" density="compact" />
+                            </div>
+                          </template>
+                        </v-tooltip>
+                      </v-col>
+                    </v-row>
+
+                    <v-row class="mt-2">
+                      <v-col cols="12">
+                        <v-text-field v-model="apiConsole.path" label="Path" density="compact" />
+                      </v-col>
+                    </v-row>
+
+                    <v-row>
+                      <v-col cols="12">
+                        <v-textarea v-model="apiConsole.body" label="Body (JSON)" rows="4" density="compact" class="api-textarea" />
+                      </v-col>
+                    </v-row>
+
+                    <v-row class="mt-2">
+                      <v-col cols="12" md="6">
+                        <v-textarea
+                          :model-value="apiExampleRequestText"
+                          label="Ejemplo request"
+                          rows="6"
+                          density="compact"
+                          readonly
+                          class="api-textarea"
+                        />
+                        <v-btn
+                          class="mt-2"
+                          size="small"
+                          color="primary"
+                          variant="text"
+                          :disabled="!apiExampleRequestText"
+                          @click="usarEjemploRequest"
+                        >
+                          Usar ejemplo en Body
+                        </v-btn>
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-textarea
+                          :model-value="apiExampleResponseText"
+                          label="Ejemplo response"
+                          rows="6"
+                          density="compact"
+                          readonly
+                          class="api-textarea"
+                        />
+                      </v-col>
+                    </v-row>
+
+                    <v-divider class="my-4" />
+
+                    <div class="text-caption text-medium-emphasis mb-2">Response</div>
+                    <v-row>
+                      <v-col cols="12" md="4">
+                        <v-text-field v-model="apiConsole.responseStatus" label="Status" readonly density="compact" />
+                      </v-col>
+                      <v-col cols="12" md="4">
+                        <v-text-field v-model="apiConsole.responseTime" label="Tiempo" readonly density="compact" />
+                      </v-col>
+                    </v-row>
+
+                    <v-row>
+                      <v-col cols="12" md="6">
+                        <v-textarea v-model="apiConsole.responseHeaders" label="Headers" rows="6" readonly density="compact" class="api-textarea" />
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-textarea v-model="apiConsole.responseBody" label="Response" rows="6" readonly density="compact" class="api-textarea" />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-window-item>
+
+      <v-window-item value="backend">
+        <v-row class="mt-2">
+          <v-col cols="12">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-cogs</v-icon>
+                  <span class="text-h6 font-weight-medium">Configuracion general</span>
+                </div>
+                <div class="d-flex ga-2">
+                  <v-btn color="primary" size="small" @click="guardarBackendConfig">
+                    <v-icon left>mdi-content-save</v-icon>
+                    Guardar
+                  </v-btn>
+                  <v-btn color="teal" size="small" @click="generarBackend">
+                    <v-icon left>mdi-code-tags</v-icon>
+                    Generar backend
+                  </v-btn>
+                </div>
+              </v-card-title>
+
+              <v-divider />
+
+              <v-card-text>
+                <v-alert type="info" variant="tonal" class="mb-4">
+                  Aqui defines como se genera el backend: rutas, seguridad, persistencia y paginacion.
+                </v-alert>
+                <v-row>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="backendSystemConfig.apiBase"
+                      label="API Base"
+                      hint="Prefijo de rutas. Ej: api/v1"
+                      persistent-hint
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="backendSystemConfig.requireAuth"
+                      :items="backendSystemAuthOptions"
+                      label="Auth global"
+                      item-title="title"
+                      item-value="value"
+                      hint="Define si todas las rutas requieren token"
+                      persistent-hint
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="backendSystemConfig.schemaPrefix"
+                      label="Prefijo schema"
+                      hint="Se usa para el schema SQL: sys_slug"
+                      persistent-hint
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="backendSystemConfig.persistence"
+                      :items="backendPersistenceOptions"
+                      label="Persistencia"
+                      hint="SQL directo o EF Core (solo SQL por ahora)"
+                      persistent-hint
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model.number="backendSystemConfig.defaultPageSize"
+                      label="Page size default"
+                      type="number"
+                      hint="Cantidad por pagina cuando hay paginacion"
+                      persistent-hint
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model.number="backendSystemConfig.maxPageSize"
+                      label="Page size max"
+                      type="number"
+                      hint="Limite maximo de registros por request"
+                      persistent-hint
+                      density="compact"
+                    />
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <v-row class="mt-4">
+          <v-col cols="12">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-database</v-icon>
+                  <span class="text-h6 font-weight-medium">Entidades</span>
+                </div>
+              </v-card-title>
+
+              <v-divider />
+
+              <v-card-text class="pt-4">
+                <div class="text-body-2">
+                  Activa o desactiva el CRUD por entidad y ajusta su configuracion.
+                </div>
+              </v-card-text>
+
+              <v-data-table :headers="headersBackend" :items="backendEntities" class="table" density="compact" hover>
+                <template #item.name="{ item }">
+                  {{ item.displayName || item.name }}
+                </template>
+
+                <template #item.isEnabled="{ item }">
+                  <v-tooltip text="Genera controller, gestor y rutas para esta entidad">
+                    <template #activator="{ props }">
+                      <div v-bind="props">
+                        <v-switch
+                          v-model="item.isEnabled"
+                          color="green"
+                          :base-color="'grey'"
+                          density="compact"
+                          hide-details
+                        />
+                      </div>
+                    </template>
+                  </v-tooltip>
+                </template>
+
+                <template #item.route="{ item }">
+                  <span class="mono">{{ item.route }}</span>
+                </template>
+
+                <template #item.actions="{ item }">
+                  <v-btn size="small" variant="text" color="primary" @click="abrirBackendEntidad(item)">
+                    Configurar
                   </v-btn>
                 </template>
-              </v-tooltip>
+              </v-data-table>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-window-item>
+    </v-window>
 
-              <v-tooltip text="Editar">
-                <template #activator="{ props }">
-                  <v-btn v-bind="props" icon size="small" color="primary" variant="text"
-                    @click="editarEntidad(item)">
-                    <v-icon>mdi-pencil</v-icon>
-                  </v-btn>
-                </template>
-              </v-tooltip>
-            </template>
-          </v-data-table>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="6">
-        <v-card elevation="2" class="card">
-          <v-card-title class="d-flex align-center justify-space-between">
-            <div class="d-flex align-center">
-              <v-icon class="mr-2" color="primary">mdi-form-textbox</v-icon>
-              <span class="text-h6 font-weight-medium">Campos</span>
-            </div>
-            <v-btn color="primary" size="small" :disabled="!entidadSeleccionada" @click="nuevoCampo">
-              <v-icon left>mdi-plus</v-icon>
-              Nuevo campo
-            </v-btn>
-          </v-card-title>
-
-          <v-divider />
-
-          <div v-if="!entidadSeleccionada" class="empty-state">
-            Selecciona una entidad para ver sus campos.
+    <v-dialog v-model="mostrarBackendDialog" max-width="1100">
+      <v-card>
+        <v-card-title class="d-flex align-center justify-space-between">
+          <div>
+            Configurar backend -
+            {{ backendEntidadActual?.displayName || backendEntidadActual?.name || '' }}
           </div>
+          <v-btn icon variant="text" @click="mostrarBackendDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
 
-          <v-data-table v-else :headers="headersCampos" :items="campos" class="table" density="compact" hover>
-            <template #item.required="{ item }">
-              <v-chip size="small" :color="item.required ? 'green' : 'grey'">
-                {{ item.required ? 'Si' : 'No' }}
-              </v-chip>
-            </template>
+        <v-divider />
 
-            <template #item.isPrimaryKey="{ item }">
-              <v-chip size="small" :color="item.isPrimaryKey ? 'primary' : 'grey'">
-                {{ item.isPrimaryKey ? 'PK' : '-' }}
-              </v-chip>
-            </template>
-
-            <template #item.actions="{ item }">
-              <v-tooltip text="Editar">
-                <template #activator="{ props }">
-                  <v-btn v-bind="props" icon size="small" color="primary" variant="text"
-                    @click="editarCampo(item)">
-                    <v-icon>mdi-pencil</v-icon>
-                  </v-btn>
-                </template>
-              </v-tooltip>
-            </template>
-          </v-data-table>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <v-row class="mt-4">
-      <v-col cols="12">
-        <v-card elevation="2" class="card">
-          <v-card-title class="d-flex align-center justify-space-between">
-            <div class="d-flex align-center">
-              <v-icon class="mr-2" color="primary">mdi-link-variant</v-icon>
-              <span class="text-h6 font-weight-medium">Relaciones</span>
+        <v-card-text v-if="backendEntidadActual">
+          <v-alert v-if="endpointOnlyMode" type="info" variant="tonal" class="mb-4">
+            <div class="d-flex align-center justify-space-between">
+              <div>Configurando API: {{ endpointOnlyTitle }}</div>
+              <v-btn size="small" variant="text" color="primary" @click="endpointOnlyMode = false; endpointOnlyKey = null; endpointPanel = []">
+                Ver configuracion completa
+              </v-btn>
             </div>
-            <v-btn color="primary" size="small" @click="nuevaRelacion">
-              <v-icon left>mdi-plus</v-icon>
-              Nueva relacion
-            </v-btn>
-          </v-card-title>
-
-          <v-divider />
-
-          <v-data-table :headers="headersRelaciones" :items="relaciones" class="table" density="compact" hover>
-            <template #item.sourceEntityId="{ item }">
-              {{ entidadNombre(item.sourceEntityId) }}
-            </template>
-
-            <template #item.targetEntityId="{ item }">
-              {{ entidadNombre(item.targetEntityId) }}
-            </template>
-
-            <template #item.cascadeDelete="{ item }">
-              <v-chip size="small" :color="item.cascadeDelete ? 'red' : 'grey'">
-                {{ item.cascadeDelete ? 'Si' : 'No' }}
-              </v-chip>
-            </template>
-
-            <template #item.actions="{ item }">
-              <v-tooltip text="Editar">
+          </v-alert>
+          <v-alert v-if="!endpointOnlyMode" type="info" variant="tonal" class="mb-4">
+            Configura la ruta, seguridad, paginacion y campos expuestos para esta entidad.
+          </v-alert>
+          <v-row v-if="!endpointOnlyMode">
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="backendEntidadActual.route"
+                label="Ruta base"
+                hint="Segmento de URL sin espacios"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-select
+                v-model="backendEntidadActual.requireAuth"
+                :items="backendAuthOptions"
+                label="Auth"
+                item-title="title"
+                item-value="value"
+                hint="Override del auth global"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-tooltip text="En vez de borrar, marca activo/inactivo">
                 <template #activator="{ props }">
-                  <v-btn v-bind="props" icon size="small" color="primary" variant="text"
-                    @click="editarRelacion(item)">
-                    <v-icon>mdi-pencil</v-icon>
-                  </v-btn>
+                  <div v-bind="props">
+                    <v-switch
+                      v-model="backendEntidadActual.softDelete"
+                      label="Soft delete"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </div>
+                </template>
+              </v-tooltip>
+              <div class="text-caption text-grey">En vez de borrar, marca activo/inactivo</div>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="backendEntidadActual.softDeleteFieldId"
+                :items="backendEntidadActual.fields"
+                item-title="name"
+                item-value="fieldId"
+                label="Campo soft delete"
+                hint="Campo booleano/activo usado para borrar logico"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-tooltip text="Habilita take/skip en la lista">
+                <template #activator="{ props }">
+                  <div v-bind="props">
+                    <v-switch
+                      v-model="backendEntidadActual.pagination"
+                      label="Paginacion"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </div>
+                </template>
+              </v-tooltip>
+              <div class="text-caption text-grey">Habilita take/skip en la lista</div>
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-text-field
+                v-model.number="backendEntidadActual.defaultPageSize"
+                label="Page size"
+                type="number"
+                hint="Tamanio por defecto"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-text-field
+                v-model.number="backendEntidadActual.maxPageSize"
+                label="Max page size"
+                type="number"
+                hint="Limite de registros por request"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-4" v-if="!endpointOnlyMode" />
+
+          <div class="text-subtitle-2 mb-1">Endpoints</div>
+          <div class="text-caption text-grey mb-2">
+            Activa o desactiva las operaciones que se generan para esta entidad.
+          </div>
+          <v-expansion-panels v-model="endpointPanel" multiple>
+            <v-expansion-panel v-if="shouldShowEndpointPanel('list')">
+              <v-expansion-panel-title>Listar (GET)</v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-switch
+                      v-model="backendEntidadActual.endpoints.list"
+                      label="Activo"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="getEndpointConfig('list').requireAuth"
+                      :items="backendAuthOptions"
+                      label="Auth"
+                      item-title="title"
+                      item-value="value"
+                      density="compact"
+                      hint="Override del auth global"
+                      persistent-hint
+                    />
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+
+            <v-expansion-panel v-if="shouldShowEndpointPanel('get')">
+              <v-expansion-panel-title>Obtener (GET /:id)</v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-switch
+                      v-model="backendEntidadActual.endpoints.get"
+                      label="Activo"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="getEndpointConfig('get').requireAuth"
+                      :items="backendAuthOptions"
+                      label="Auth"
+                      item-title="title"
+                      item-value="value"
+                      density="compact"
+                      hint="Override del auth global"
+                      persistent-hint
+                    />
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+
+            <v-expansion-panel v-if="shouldShowEndpointPanel('create')">
+              <v-expansion-panel-title>Crear (POST)</v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-switch
+                      v-model="backendEntidadActual.endpoints.create"
+                      label="Activo"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="getEndpointConfig('create').requireAuth"
+                      :items="backendAuthOptions"
+                      label="Auth"
+                      item-title="title"
+                      item-value="value"
+                      density="compact"
+                      hint="Override del auth global"
+                      persistent-hint
+                    />
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+
+            <v-expansion-panel v-if="shouldShowEndpointPanel('update')">
+              <v-expansion-panel-title>Editar (PUT)</v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-switch
+                      v-model="backendEntidadActual.endpoints.update"
+                      label="Activo"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="getEndpointConfig('update').requireAuth"
+                      :items="backendAuthOptions"
+                      label="Auth"
+                      item-title="title"
+                      item-value="value"
+                      density="compact"
+                      hint="Override del auth global"
+                      persistent-hint
+                    />
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+
+            <v-expansion-panel v-if="shouldShowEndpointPanel('delete')">
+              <v-expansion-panel-title>Eliminar (DELETE)</v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-switch
+                      v-model="backendEntidadActual.endpoints.delete"
+                      label="Activo"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="getEndpointConfig('delete').requireAuth"
+                      :items="backendAuthOptions"
+                      label="Auth"
+                      item-title="title"
+                      item-value="value"
+                      density="compact"
+                      hint="Override del auth global"
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-select
+                      v-model="getEndpointConfig('delete').useSoftDelete"
+                      :items="endpointSoftDeleteOptions"
+                      label="Soft delete"
+                      item-title="title"
+                      item-value="value"
+                      density="compact"
+                      hint="Override del modo de borrado"
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="backendEntidadActual.softDeleteFieldId"
+                      :items="backendEntidadActual.fields"
+                      item-title="name"
+                      item-value="fieldId"
+                      label="Campo soft delete"
+                      density="compact"
+                      hint="Campo booleano/activo"
+                      persistent-hint
+                    />
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
+
+          <v-divider class="my-4" v-if="!endpointOnlyMode" />
+
+          <div class="text-subtitle-2 mb-2" v-if="!endpointOnlyMode">Filtros y orden</div>
+          <v-row v-if="!endpointOnlyMode">
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="backendEntidadActual.filterFieldIds"
+                :items="backendEntidadActual.fields"
+                item-title="name"
+                item-value="fieldId"
+                label="Campos filtrables"
+                multiple
+                hint="Campos tipo texto usados en search"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-select
+                v-model="backendEntidadActual.defaultSortFieldId"
+                :items="backendEntidadActual.fields"
+                item-title="name"
+                item-value="fieldId"
+                label="Orden por defecto"
+                hint="Campo usado para ordenar"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-select
+                v-model="backendEntidadActual.defaultSortDirection"
+                :items="backendSortOptions"
+                label="Direccion"
+                hint="asc o desc"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-4" v-if="!endpointOnlyMode" />
+
+          <div class="text-subtitle-2 mb-2" v-if="!endpointOnlyMode">Campos</div>
+          <div class="d-flex flex-wrap ga-2 text-caption mb-2" v-if="!endpointOnlyMode">
+            <v-chip size="x-small" variant="tonal" color="primary">Expose: sale en respuesta</v-chip>
+            <v-chip size="x-small" variant="tonal" color="primary">ReadOnly: no se envia</v-chip>
+            <v-chip size="x-small" variant="tonal" color="primary">Required/Max/Unique: validaciones</v-chip>
+            <v-chip size="x-small" variant="tonal" color="primary">Default: valor sugerido</v-chip>
+            <v-chip size="x-small" variant="tonal" color="primary">Display: alias UI</v-chip>
+          </div>
+          <v-data-table
+            v-if="!endpointOnlyMode"
+            :headers="headersBackendFields"
+            :items="backendEntidadActual.fields"
+            class="table"
+            density="compact"
+            hover
+          >
+            <template #item.expose="{ item }">
+              <v-tooltip text="Si, aparece en la respuesta">
+                <template #activator="{ props }">
+                  <div v-bind="props">
+                    <v-switch
+                      v-model="item.expose"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </div>
                 </template>
               </v-tooltip>
             </template>
+            <template #item.readOnly="{ item }">
+              <v-tooltip text="No se envia en create/update">
+                <template #activator="{ props }">
+                  <div v-bind="props">
+                    <v-switch
+                      v-model="item.readOnly"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </div>
+                </template>
+              </v-tooltip>
+            </template>
+            <template #item.required="{ item }">
+              <v-select
+                v-model="item.required"
+                :items="backendRequiredOptions"
+                item-title="title"
+                item-value="value"
+                density="compact"
+                hide-details
+              />
+            </template>
+            <template #item.maxLength="{ item }">
+              <v-text-field v-model.number="item.maxLength" type="number" density="compact" hide-details />
+            </template>
+            <template #item.unique="{ item }">
+              <v-tooltip text="Valida que el valor no se repita">
+                <template #activator="{ props }">
+                  <div v-bind="props">
+                    <v-switch
+                      v-model="item.unique"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </div>
+                </template>
+              </v-tooltip>
+            </template>
+            <template #item.defaultValue="{ item }">
+              <v-text-field v-model="item.defaultValue" density="compact" hide-details />
+            </template>
+            <template #item.displayAs="{ item }">
+              <v-text-field v-model="item.displayAs" density="compact" hide-details />
+            </template>
           </v-data-table>
-        </v-card>
-      </v-col>
-    </v-row>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="mostrarBackendDialog = false">Cerrar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <EntidadDialog v-model="mostrarEntidadDialog" :entidad="entidadSeleccionadaEdicion" :system-id="systemId"
       @guardado="cargarEntidades" />
@@ -190,12 +1171,13 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, computed, watch, reactive, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import sistemaService from '../../api/sistema.service.js'
 import entidadService from '../../api/entidad.service.js'
 import campoService from '../../api/campo.service.js'
 import relacionService from '../../api/relacion.service.js'
+import backendConfigService from '../../api/backend-config.service.js'
 import EntidadDialog from '../../components/sistemas/EntidadDialog.vue'
 import CampoDialog from '../../components/sistemas/CampoDialog.vue'
 import RelacionDialog from '../../components/sistemas/RelacionDialog.vue'
@@ -212,6 +1194,16 @@ const entidades = ref([])
 const campos = ref([])
 const entidadSeleccionada = ref(null)
 const relaciones = ref([])
+const backendSystemConfig = ref({
+  apiBase: 'api/v1',
+  requireAuth: true,
+  schemaPrefix: 'sys',
+  persistence: 'sql',
+  defaultPageSize: 50,
+  maxPageSize: 200
+})
+const backendEntities = ref([])
+const tab = ref(localStorage.getItem('systemEditorTab') || 'datos')
 
 const mostrarEntidadDialog = ref(false)
 const entidadSeleccionadaEdicion = ref(null)
@@ -221,6 +1213,43 @@ const campoSeleccionado = ref(null)
 
 const mostrarRelacionDialog = ref(false)
 const relacionSeleccionada = ref(null)
+const mostrarBackendDialog = ref(false)
+const backendEntidadActual = ref(null)
+const apiConsole = ref({
+  baseUrl: '',
+  method: 'GET',
+  path: '',
+  body: '',
+  sendToken: true,
+  responseStatus: '',
+  responseTime: '',
+  responseBody: '',
+  responseHeaders: ''
+})
+const apiRouteSeleccionada = ref(null)
+const apiRouteFilterText = ref('')
+const apiRouteFilterMethod = ref('')
+const endpointPanel = ref([])
+const endpointOnlyMode = ref(false)
+const endpointOnlyKey = ref(null)
+const restartDialog = reactive({
+  open: false,
+  status: 'idle',
+  message: ''
+})
+
+const backendHealth = reactive({
+  status: 'unknown',
+  lastChecked: null
+})
+const healthIntervalId = ref(null)
+const backendLogs = reactive({
+  entries: [],
+  lastId: 0,
+  status: 'idle',
+  autoScroll: true
+})
+const backendLogRef = ref(null)
 
 const headersEntidades = [
   { title: 'Nombre', key: 'name' },
@@ -246,6 +1275,275 @@ const headersRelaciones = [
   { title: 'Cascade', key: 'cascadeDelete' },
   { title: 'Acciones', key: 'actions', sortable: false }
 ]
+
+const headersBackend = [
+  { title: 'Entidad', key: 'name' },
+  { title: 'Ruta', key: 'route' },
+  { title: 'Generar CRUD', key: 'isEnabled', sortable: false },
+  { title: 'Acciones', key: 'actions', sortable: false }
+]
+
+const headersBackendFields = [
+  { title: 'Campo', key: 'name' },
+  { title: 'Expose', key: 'expose', sortable: false },
+  { title: 'ReadOnly', key: 'readOnly', sortable: false },
+  { title: 'Required', key: 'required', sortable: false },
+  { title: 'Max', key: 'maxLength', sortable: false },
+  { title: 'Unique', key: 'unique', sortable: false },
+  { title: 'Default', key: 'defaultValue', sortable: false },
+  { title: 'Display', key: 'displayAs', sortable: false }
+]
+
+const headersApiRoutes = [
+  { title: 'Metodo', key: 'method' },
+  { title: 'Path', key: 'path' },
+  { title: 'Acciones', key: 'actions', sortable: false }
+]
+
+const backendAuthOptions = [
+  { title: 'Heredar', value: null },
+  { title: 'Requerir', value: true },
+  { title: 'No requerir', value: false }
+]
+
+const backendSystemAuthOptions = [
+  { title: 'Requerir', value: true },
+  { title: 'No requerir', value: false }
+]
+
+const backendPersistenceOptions = [
+  'sql',
+  'efcore'
+]
+
+const backendRequiredOptions = [
+  { title: 'Heredar', value: null },
+  { title: 'Si', value: true },
+  { title: 'No', value: false }
+]
+
+const endpointSoftDeleteOptions = [
+  { title: 'Heredar', value: null },
+  { title: 'Soft delete', value: true },
+  { title: 'Hard delete', value: false }
+]
+
+const backendSortOptions = [
+  'asc',
+  'desc'
+]
+
+const baseBackendPort = 5032
+const backendPort = computed(() => baseBackendPort + (Number.isFinite(systemId) ? systemId : 0))
+const backendBaseUrl = computed(() => `http://localhost:${backendPort.value}`)
+const systembaseBaseUrl = computed(() => `http://localhost:${baseBackendPort}`)
+const portsFilePath = computed(() => 'systems/ports.json')
+
+const backendHealthLabel = computed(() => {
+  if (backendHealth.status === 'online') return 'Online'
+  if (backendHealth.status === 'offline') return 'Offline'
+  if (backendHealth.status === 'checking') return 'Verificando...'
+  return 'Sin estado'
+})
+
+const backendHealthColor = computed(() => {
+  if (backendHealth.status === 'online') return 'green'
+  if (backendHealth.status === 'offline') return 'red'
+  if (backendHealth.status === 'checking') return 'orange'
+  return 'grey'
+})
+
+const apiRouteOptions = computed(() => {
+  const base = backendSystemConfig.value.apiBase || 'api/v1'
+  const basePath = `/${String(base).replace(/^\/+|\/+$/g, '')}`
+  const routes = []
+
+  backendEntities.value.forEach(entity => {
+    const route = entity.route || toKebab(entity.name || '')
+    const entityId = entity.entityId ?? entity.id
+    const fullBase = `${basePath}/${route}`
+
+    if (entity.endpoints?.list !== false) {
+      routes.push({ title: `GET ${fullBase}`, method: 'GET', path: fullBase, entityId })
+    }
+    if (entity.endpoints?.get !== false) {
+      routes.push({ title: `GET ${fullBase}/{id}`, method: 'GET', path: `${fullBase}/:id`, entityId })
+    }
+    if (entity.endpoints?.create !== false) {
+      routes.push({ title: `POST ${fullBase}`, method: 'POST', path: fullBase, entityId })
+    }
+    if (entity.endpoints?.update !== false) {
+      routes.push({ title: `PUT ${fullBase}/{id}`, method: 'PUT', path: `${fullBase}/:id`, entityId })
+    }
+    if (entity.endpoints?.delete !== false) {
+      routes.push({ title: `DELETE ${fullBase}/{id}`, method: 'DELETE', path: `${fullBase}/:id`, entityId })
+    }
+  })
+
+  return routes
+})
+
+const filteredApiRoutes = computed(() => {
+  const text = apiRouteFilterText.value.trim().toLowerCase()
+  const methodFilter = apiRouteFilterMethod.value
+  return apiRouteOptions.value.filter(item => {
+    if (methodFilter && methodFilter !== item.method) return false
+    if (!text) return true
+    return (
+      item.path.toLowerCase().includes(text) ||
+      item.title.toLowerCase().includes(text)
+    )
+  })
+})
+
+const apiMethodOptions = [
+  { title: 'Todos', value: '' },
+  { title: 'GET', value: 'GET' },
+  { title: 'POST', value: 'POST' },
+  { title: 'PUT', value: 'PUT' },
+  { title: 'DELETE', value: 'DELETE' }
+]
+
+function apiMethodColor(method) {
+  if (method === 'GET') return 'green'
+  if (method === 'POST') return 'blue'
+  if (method === 'PUT') return 'orange'
+  if (method === 'DELETE') return 'red'
+  return 'grey'
+}
+
+const endpointConfigKeyMap = {
+  list: 'listConfig',
+  get: 'getConfig',
+  create: 'createConfig',
+  update: 'updateConfig',
+  delete: 'deleteConfig'
+}
+
+const endpointTitleMap = {
+  list: 'Listar (GET)',
+  get: 'Obtener (GET /:id)',
+  create: 'Crear (POST)',
+  update: 'Editar (PUT)',
+  delete: 'Eliminar (DELETE)'
+}
+
+function getEndpointConfig(key) {
+  const entity = backendEntidadActual.value
+  if (!entity) return {}
+  if (!entity.endpoints) entity.endpoints = {}
+  const prop = endpointConfigKeyMap[key]
+  if (!prop) return {}
+  if (!entity.endpoints[prop]) {
+    entity.endpoints[prop] = {
+      requireAuth: null,
+      useSoftDelete: null
+    }
+  }
+  return entity.endpoints[prop]
+}
+
+function endpointKeyFromRoute(item) {
+  if (!item?.method) return null
+  const method = item.method.toUpperCase()
+  if (method === 'GET') return item.path.includes(':id') ? 'get' : 'list'
+  if (method === 'POST') return 'create'
+  if (method === 'PUT') return 'update'
+  if (method === 'DELETE') return 'delete'
+  return null
+}
+
+const endpointOnlyTitle = computed(() => {
+  if (!endpointOnlyKey.value) return ''
+  return endpointTitleMap[endpointOnlyKey.value] || ''
+})
+
+function shouldShowEndpointPanel(key) {
+  return !endpointOnlyMode.value || endpointOnlyKey.value === key
+}
+
+function backendBasePath() {
+  const base = backendSystemConfig.value.apiBase || 'api/v1'
+  return `/${String(base).replace(/^\/+|\/+$/g, '')}`
+}
+
+const apiSelectedEntity = computed(() => {
+  const entityId = apiRouteSeleccionada.value?.entityId
+  if (!entityId) return null
+  return backendEntities.value.find(entity => (entity.entityId ?? entity.id) === entityId) || null
+})
+
+function toPascalCase(value) {
+  if (!value) return ''
+  return String(value)
+    .replace(/[_\-\s]+(.)?/g, (_, chr) => (chr ? chr.toUpperCase() : ''))
+    .replace(/^(.)/, chr => chr.toUpperCase())
+}
+
+function fieldKey(field) {
+  return toPascalCase(field.columnName || field.name || '')
+}
+
+function sampleValueForField(field) {
+  const type = String(field.dataType || '').toLowerCase()
+  if (type.includes('uniqueidentifier') || type.includes('uuid')) return '00000000-0000-0000-0000-000000000000'
+  if (type.includes('int')) return 1
+  if (type.includes('decimal') || type.includes('numeric') || type.includes('money')) return 10.5
+  if (type.includes('float') || type.includes('real')) return 10.5
+  if (type.includes('bit') || type.includes('bool')) return true
+  if (type.includes('date') || type.includes('time')) return '2024-01-01T00:00:00Z'
+  if (type.includes('char') || type.includes('text')) return 'string'
+  return 'valor'
+}
+
+function buildExampleObject(fields) {
+  const result = {}
+  fields.forEach(field => {
+    const key = fieldKey(field)
+    if (!key) return
+    result[key] = sampleValueForField(field)
+  })
+  return result
+}
+
+function getCreateFields(entity) {
+  return (entity.fields || []).filter(field => field.expose && !field.readOnly && !field.isIdentity)
+}
+
+function getUpdateFields(entity) {
+  return (entity.fields || []).filter(
+    field => field.expose && !field.readOnly && !field.isPrimaryKey && !field.isIdentity
+  )
+}
+
+function getResponseFields(entity) {
+  return (entity.fields || []).filter(field => field.expose)
+}
+
+const apiExampleRequestText = computed(() => {
+  const route = apiRouteSeleccionada.value
+  const entity = apiSelectedEntity.value
+  if (!route || !entity) return ''
+  if (route.method === 'POST') return JSON.stringify(buildExampleObject(getCreateFields(entity)), null, 2)
+  if (route.method === 'PUT') return JSON.stringify(buildExampleObject(getUpdateFields(entity)), null, 2)
+  return ''
+})
+
+const apiExampleResponseText = computed(() => {
+  const route = apiRouteSeleccionada.value
+  const entity = apiSelectedEntity.value
+  if (!route || !entity) return ''
+  const payload = buildExampleObject(getResponseFields(entity))
+  if (route.method === 'GET' && route.path.includes(':id')) return JSON.stringify(payload, null, 2)
+  if (route.method === 'GET') return JSON.stringify([payload], null, 2)
+  if (route.method === 'POST' || route.method === 'PUT') return JSON.stringify(payload, null, 2)
+  return ''
+})
+
+function usarEjemploRequest() {
+  if (!apiExampleRequestText.value) return
+  apiConsole.value.body = apiExampleRequestText.value
+}
 
 async function cargarSistema() {
   const { data } = await sistemaService.getById(systemId)
@@ -275,6 +1573,12 @@ async function cargarCampos() {
 async function cargarRelaciones() {
   const { data } = await relacionService.getBySystem(systemId)
   relaciones.value = data
+}
+
+async function cargarBackendConfig() {
+  const { data } = await backendConfigService.getBySystem(systemId)
+  backendSystemConfig.value = data?.system || backendSystemConfig.value
+  backendEntities.value = data?.entities || []
 }
 
 function seleccionarEntidad(item) {
@@ -341,10 +1645,403 @@ async function publicarSistema() {
   }
 }
 
+async function guardarBackendConfig() {
+  try {
+    const payload = {
+      system: backendSystemConfig.value,
+      entities: backendEntities.value
+    }
+    await backendConfigService.guardar(systemId, payload)
+    window.alert('Configuracion de backend guardada.')
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.Message ||
+      'Error al guardar configuracion de backend.'
+    window.alert(message)
+  }
+}
+
+function abrirBackendEntidad(item) {
+  backendEntidadActual.value = item
+  mostrarBackendDialog.value = true
+  endpointPanel.value = []
+  endpointOnlyMode.value = false
+  endpointOnlyKey.value = null
+}
+
+function usarApiRoute(item) {
+  apiRouteSeleccionada.value = item
+}
+
+function configurarApi(item) {
+  const entityId = item?.entityId
+  if (!entityId) return
+  const entity = backendEntities.value.find(e => (e.entityId ?? e.id) === entityId)
+  if (!entity) return
+
+  backendEntidadActual.value = entity
+  mostrarBackendDialog.value = true
+
+  const key = endpointKeyFromRoute(item)
+  if (key) {
+    endpointOnlyMode.value = true
+    endpointOnlyKey.value = key
+    const indexMap = { list: 0, get: 1, create: 2, update: 3, delete: 4 }
+    const index = indexMap[key]
+    if (index !== undefined) endpointPanel.value = [index]
+  } else {
+    endpointOnlyMode.value = false
+    endpointOnlyKey.value = null
+  }
+}
+
+async function copiarTexto(value, label = 'Texto') {
+  if (!value) return
+  try {
+    await navigator.clipboard.writeText(value)
+    window.alert(`${label} copiado.`)
+  } catch {
+    window.prompt('Copia esto:', value)
+  }
+}
+
+watch(
+  () => apiConsole.value.baseUrl,
+  value => {
+    if (value) localStorage.setItem('backendConsoleBaseUrl', value)
+  }
+)
+
+watch(apiRouteSeleccionada, value => {
+  if (!value) return
+  apiConsole.value.method = value.method
+  apiConsole.value.path = value.path
+  apiConsole.value.body = ''
+  apiConsole.value.responseStatus = ''
+  apiConsole.value.responseTime = ''
+  apiConsole.value.responseBody = ''
+  apiConsole.value.responseHeaders = ''
+})
+
+watch(
+  tab,
+  value => {
+    if (value) localStorage.setItem('systemEditorTab', value)
+    if (value === 'herramientas') {
+      startHealthPolling()
+      startLogsPolling()
+    } else {
+      stopHealthPolling()
+      stopLogsPolling()
+    }
+  }
+)
+
+async function enviarApiConsole() {
+  apiConsole.value.responseStatus = ''
+  apiConsole.value.responseTime = ''
+  apiConsole.value.responseBody = ''
+  apiConsole.value.responseHeaders = ''
+
+  const baseUrl = apiConsole.value.baseUrl.replace(/\/+$/, '')
+  const path = apiConsole.value.path.startsWith('/') ? apiConsole.value.path : `/${apiConsole.value.path}`
+  const url = `${baseUrl}${path}`.replace('/:id', '/1')
+  const method = apiConsole.value.method.toUpperCase()
+
+  const headers = {
+    'Content-Type': 'application/json'
+  }
+
+  if (apiConsole.value.sendToken) {
+    const token = localStorage.getItem('token')
+    if (token) headers.Authorization = `Bearer ${token}`
+  }
+
+  let body = undefined
+  if (method !== 'GET' && method !== 'DELETE') {
+    if (apiConsole.value.body) {
+      try {
+        body = JSON.stringify(JSON.parse(apiConsole.value.body))
+      } catch {
+        body = apiConsole.value.body
+      }
+    }
+  }
+
+  const start = performance.now()
+  try {
+    const response = await fetch(url, { method, headers, body })
+    const time = Math.round(performance.now() - start)
+    apiConsole.value.responseStatus = `${response.status} ${response.statusText}`
+    apiConsole.value.responseTime = `${time} ms`
+    apiConsole.value.responseHeaders = [...response.headers.entries()]
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('\n')
+
+    const text = await response.text()
+    try {
+      apiConsole.value.responseBody = JSON.stringify(JSON.parse(text), null, 2)
+    } catch {
+      apiConsole.value.responseBody = text
+    }
+  } catch (error) {
+    apiConsole.value.responseStatus = 'Error'
+    apiConsole.value.responseBody = error?.message || 'Error al llamar la API.'
+  }
+}
+
+async function reiniciarBackend() {
+  const ok = window.confirm('Reiniciar backend? (requiere dotnet watch en modo dev)')
+  if (!ok) return
+
+  try {
+    restartDialog.open = true
+    restartDialog.status = 'restarting'
+    restartDialog.message = 'Reiniciando backend...'
+
+    const token = localStorage.getItem('token')
+    const basePath = backendBasePath()
+    const url = `${backendBaseUrl.value}${basePath}/dev/restart`
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined
+    const response = await fetch(url, { method: 'POST', headers })
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(text || 'Error al reiniciar backend.')
+    }
+
+    restartDialog.status = 'waiting'
+    restartDialog.message = 'Esperando que el backend vuelva...'
+
+    const online = await esperarBackendOnline()
+    if (online) {
+      restartDialog.status = 'online'
+      restartDialog.message = 'Backend reiniciado.'
+      backendHealth.status = 'online'
+      await cargarBackendLogs()
+      setTimeout(() => {
+        restartDialog.open = false
+      }, 1200)
+    } else {
+      restartDialog.status = 'timeout'
+      restartDialog.message = 'Timeout esperando el backend.'
+    }
+  } catch (error) {
+    restartDialog.status = 'error'
+    restartDialog.message = error?.message || 'Error al reiniciar backend.'
+  }
+}
+
+async function iniciarBackend() {
+  const ok = window.confirm('Iniciar backend? (modo dev)')
+  if (!ok) return
+
+  try {
+    restartDialog.open = true
+    restartDialog.status = 'restarting'
+    restartDialog.message = 'Iniciando backend...'
+
+    await cargarBackendLogs(true)
+    await sistemaService.iniciarBackend(systemId)
+
+    restartDialog.status = 'waiting'
+    restartDialog.message = 'Esperando que el backend este online...'
+
+    const online = await esperarBackendOnline()
+    if (online) {
+      restartDialog.status = 'online'
+      restartDialog.message = 'Backend iniciado.'
+      backendHealth.status = 'online'
+      await cargarBackendLogs(true)
+      setTimeout(() => {
+        restartDialog.open = false
+      }, 1200)
+    } else {
+      restartDialog.status = 'timeout'
+      restartDialog.message = 'Timeout esperando el backend.'
+    }
+  } catch (error) {
+    restartDialog.status = 'error'
+    restartDialog.message = error?.response?.data?.message || error?.message || 'Error al iniciar backend.'
+  }
+}
+
+async function detenerBackend() {
+  const ok = window.confirm('Detener backend?')
+  if (!ok) return
+
+  try {
+    restartDialog.open = true
+    restartDialog.status = 'restarting'
+    restartDialog.message = 'Deteniendo backend...'
+
+    await sistemaService.detenerBackend(systemId)
+
+    backendHealth.status = 'offline'
+    restartDialog.status = 'online'
+    restartDialog.message = 'Backend detenido.'
+    setTimeout(() => {
+      restartDialog.open = false
+    }, 1200)
+  } catch (error) {
+    restartDialog.status = 'error'
+    restartDialog.message = error?.response?.data?.message || error?.message || 'Error al detener backend.'
+  }
+}
+
+async function esperarBackendOnline() {
+  const maxAttempts = 20
+  for (let i = 0; i < maxAttempts; i += 1) {
+    try {
+      const { data } = await sistemaService.pingBackend(systemId)
+      if (data?.online) return true
+    } catch {
+      // ignore
+    }
+    await new Promise(resolve => setTimeout(resolve, 800))
+  }
+
+  return false
+}
+
+async function checkBackendHealth() {
+  backendHealth.status = 'checking'
+
+  try {
+    const { data } = await sistemaService.pingBackend(systemId)
+    backendHealth.status = data?.online ? 'online' : 'offline'
+  } catch {
+    backendHealth.status = 'offline'
+  } finally {
+    backendHealth.lastChecked = new Date().toISOString()
+  }
+}
+
+function startHealthPolling() {
+  if (healthIntervalId.value) return
+  checkBackendHealth()
+}
+
+function stopHealthPolling() {
+  if (!healthIntervalId.value) return
+  clearInterval(healthIntervalId.value)
+  healthIntervalId.value = null
+}
+
+function formatLogTime(value) {
+  if (!value) return ''
+  try {
+    return new Date(value).toLocaleTimeString()
+  } catch {
+    return ''
+  }
+}
+
+function scrollBackendLogs() {
+  if (!backendLogs.autoScroll) return
+  nextTick(() => {
+    const el = backendLogRef.value
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  })
+}
+
+function limpiarBackendLogs() {
+  backendLogs.entries.splice(0, backendLogs.entries.length)
+}
+
+async function cargarBackendLogs(forceReset = false) {
+  if (forceReset) {
+    backendLogs.entries.splice(0, backendLogs.entries.length)
+    backendLogs.lastId = 0
+  }
+  try {
+    const { data } = await sistemaService.logsBackend(systemId, backendLogs.lastId, 200)
+    const items = data?.items || data?.Items || []
+    if (items.length) {
+      backendLogs.entries.push(...items)
+      const lastItem = items[items.length - 1]
+      backendLogs.lastId = lastItem?.id ?? lastItem?.Id ?? data?.lastId ?? backendLogs.lastId
+      if (backendLogs.entries.length > 500) {
+        backendLogs.entries.splice(0, backendLogs.entries.length - 500)
+      }
+      scrollBackendLogs()
+    } else if (data?.lastId) {
+      backendLogs.lastId = data.lastId
+    }
+    backendLogs.status = 'ok'
+  } catch {
+    backendLogs.status = 'error'
+  }
+}
+
+function startLogsPolling() {
+  cargarBackendLogs(true)
+}
+
+function stopLogsPolling() {
+  // no-op (polling disabled)
+}
+
+async function generarBackend() {
+  const nombre = sistema.value?.name || 'sistema'
+  const ok = window.confirm(`Generar backend para ${nombre}?`)
+  if (!ok) return
+
+  try {
+    const { data } = await sistemaService.generarBackend(systemId, false)
+    const outputPath = data?.outputPath || data?.OutputPath
+    const restoreOk = data?.restoreOk ?? data?.RestoreOk
+    const restoreError = data?.restoreError || data?.RestoreError
+    window.alert(`Backend generado en:\n${outputPath}`)
+    if (restoreOk === false) {
+      window.alert(`dotnet restore fallo:\n${restoreError || 'Revisa la consola del backend.'}`)
+    }
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.Message ||
+      'Error al generar backend.'
+
+    if (message.includes('overwrite=true')) {
+      const overwrite = window.confirm(`${message}\n\nDeseas reemplazarlo?`)
+      if (overwrite) {
+        try {
+          const { data } = await sistemaService.generarBackend(systemId, true)
+          const outputPath = data?.outputPath || data?.OutputPath
+          window.alert(`Backend generado en:\n${outputPath}`)
+          return
+        } catch (innerError) {
+          const innerMessage =
+            innerError?.response?.data?.message ||
+            innerError?.response?.data?.Message ||
+            'Error al reemplazar el backend.'
+          window.alert(innerMessage)
+          return
+        }
+      }
+    }
+
+    window.alert(message)
+  }
+}
+
 onMounted(async () => {
+  const savedBase = localStorage.getItem('backendConsoleBaseUrl')
+  apiConsole.value.baseUrl = savedBase || backendBaseUrl.value
   await cargarSistema()
   await cargarEntidades()
   await cargarRelaciones()
+  await cargarBackendConfig()
+  if (tab.value === 'herramientas') {
+    startHealthPolling()
+    startLogsPolling()
+  }
+})
+
+onBeforeUnmount(() => {
+  stopHealthPolling()
+  stopLogsPolling()
 })
 
 function entidadNombre(id) {
@@ -368,5 +2065,104 @@ function entidadNombre(id) {
 .empty-state {
   padding: 24px;
   color: #6b7280;
+}
+
+.mono {
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.backend-console {
+  background: #0b1020;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  height: 220px;
+  overflow-y: auto;
+  font-size: 0.8rem;
+}
+
+.backend-log-line {
+  white-space: pre-wrap;
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
+.backend-log-time {
+  color: #94a3b8;
+  margin-right: 6px;
+}
+
+.backend-log-level {
+  color: #60a5fa;
+  margin-right: 6px;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+.backend-log-error {
+  color: #fca5a5;
+}
+
+.backend-log-stdout {
+  color: #e2e8f0;
+}
+
+.api-textarea :deep(textarea) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.designer-header {
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px 20px;
+}
+
+.designer-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(25, 118, 210, 0.12);
+  margin-right: 12px;
+}
+
+.designer-subtitle {
+  color: #6b7280;
+}
+
+.designer-tabs {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.designer-tabs :deep(.v-tab) {
+  text-transform: none;
+  font-weight: 600;
+  min-height: 40px;
+  color: #6b7280;
+}
+
+.designer-tabs :deep(.v-tab--selected) {
+  background: transparent;
+  color: #1d4ed8;
+}
+
+.designer-tabs :deep(.v-tabs-bar) {
+  height: auto;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.port-card {
+  border-radius: 12px;
+}
+
+.port-value {
+  font-size: 0.95rem;
+  color: #1f2937;
 }
 </style>
