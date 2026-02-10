@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import { vuetify } from './plugins/vuetify'
+import './styles/systembase.css'
 
 const resizeObserverMessages = [
   'ResizeObserver loop completed with undelivered notifications',

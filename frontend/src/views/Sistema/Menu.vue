@@ -2,16 +2,16 @@
   <v-container fluid>
 
     <!-- HEADER -->
-    <v-row class="mb-6 align-center">
+    <v-row class="mb-6 align-center sb-page-header">
       <v-col>
         <div class="d-flex align-center">
-          <v-icon class="mr-2" color="primary" size="28">
-            mdi-view-list
-          </v-icon>
+          <div class="sb-page-icon">
+            <v-icon color="primary" size="26">mdi-view-list</v-icon>
+          </div>
 
           <div>
             <h2 class="mb-1">Menú</h2>
-            <span class="grey--text text-body-2">
+            <span class="sb-page-subtitle text-body-2">
               Administración de menús del sistema
             </span>
           </div>
@@ -19,7 +19,7 @@
       </v-col>
 
       <v-col cols="auto">
-        <v-btn color="primary" @click="nuevoMenu">
+        <v-btn color="primary" variant="tonal" @click="nuevoMenu">
           <v-icon left>mdi-plus</v-icon>
           Nuevo menú
         </v-btn>
@@ -79,7 +79,4 @@ onMounted(cargarMenus)
 </script>
 
 <style scoped>
-h2 {
-  font-weight: 600;
-}
 </style>

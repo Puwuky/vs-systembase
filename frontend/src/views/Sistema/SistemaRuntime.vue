@@ -1,19 +1,21 @@
 <template>
   <v-container fluid>
-    <v-row class="mb-4 align-center">
+    <v-row class="mb-4 align-center sb-page-header">
       <v-col>
         <div class="d-flex align-center">
-          <v-icon class="mr-2" color="primary" size="28">mdi-database</v-icon>
+          <div class="sb-page-icon">
+            <v-icon color="primary" size="26">mdi-database</v-icon>
+          </div>
           <div>
             <h2 class="mb-1">{{ sistema?.name || 'Sistema' }}</h2>
-            <span class="grey--text text-body-2">
+            <span class="sb-page-subtitle text-body-2">
               /s/{{ slug }}{{ entitySlug ? `/${entitySlug}` : '' }}
             </span>
           </div>
         </div>
       </v-col>
       <v-col cols="auto" class="d-flex ga-2">
-        <v-btn variant="text" @click="volver">
+        <v-btn variant="tonal" color="primary" @click="volver">
           <v-icon left>mdi-arrow-left</v-icon>
           Volver
         </v-btn>

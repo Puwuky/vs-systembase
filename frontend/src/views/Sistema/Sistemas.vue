@@ -1,29 +1,29 @@
 <template>
   <v-container fluid>
-    <v-row class="mb-6 align-center">
+    <v-row class="mb-6 align-center sb-page-header">
       <v-col>
         <div class="d-flex align-center">
-          <v-icon class="mr-2" color="primary" size="28">
-            mdi-apps
-          </v-icon>
+          <div class="sb-page-icon">
+            <v-icon color="primary" size="26">mdi-apps</v-icon>
+          </div>
           <div>
             <h2 class="mb-1">Sistemas</h2>
-            <span class="grey--text text-body-2">
+            <span class="sb-page-subtitle text-body-2">
               Administracion de sistemas generados
             </span>
           </div>
         </div>
       </v-col>
 
-      <v-col cols="auto">
-        <v-btn color="primary" @click="nuevoSistema">
+      <v-col cols="auto" class="d-flex ga-2">
+        <v-btn color="primary" variant="tonal" @click="nuevoSistema">
           <v-icon left>mdi-plus</v-icon>
           Nuevo sistema
         </v-btn>
       </v-col>
     </v-row>
 
-    <v-card elevation="2" class="sistemas-card">
+    <v-card elevation="2" class="sistemas-card card">
       <v-card-title class="d-flex align-center justify-space-between">
         <div class="d-flex align-center">
           <v-icon class="mr-2" color="primary">mdi-apps</v-icon>
@@ -36,7 +36,7 @@
 
       <v-divider />
 
-      <v-data-table :headers="headers" :items="sistemas" class="sistemas-table" density="comfortable" hover>
+      <v-data-table :headers="headers" :items="sistemas" class="sistemas-table table" density="comfortable" hover>
         <template #item.status="{ item }">
           <v-chip size="small" :color="item.status === 'published' ? 'green' : 'grey'">
             {{ item.status }}

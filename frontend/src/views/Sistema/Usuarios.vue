@@ -2,24 +2,24 @@
     <v-container fluid>
 
         <!-- HEADER -->
-        <v-row class="mb-6 align-center">
+        <v-row class="mb-6 align-center sb-page-header">
             <v-col>
                 <div class="d-flex align-center">
-                    <v-icon class="mr-2" color="primary" size="28">
-                        mdi-account-group
-                    </v-icon>
+                    <div class="sb-page-icon">
+                        <v-icon color="primary" size="26">mdi-account-group</v-icon>
+                    </div>
 
                     <div>
                         <h2 class="mb-1">Usuarios</h2>
-                        <span class="grey--text text-body-2">
+                        <span class="sb-page-subtitle text-body-2">
                             Administración de usuarios del sistema
                         </span>
                     </div>
                 </div>
             </v-col>
 
-            <v-col class="text-right">
-                <v-btn color="primary" @click="abrirCrear">
+            <v-col cols="auto" class="d-flex ga-2">
+                <v-btn color="primary" variant="tonal" @click="abrirCrear">
                     <v-icon left>mdi-account-plus</v-icon>
                     Nuevo usuario
                 </v-btn>
@@ -116,7 +116,4 @@ export default {
 </script>
 
 <style scoped>
-h2 {
-    font-weight: 600;
-}
 </style>

@@ -1,15 +1,15 @@
 <template>
   <v-container fluid>
-    <v-row class="mb-4 align-center designer-header">
+    <v-row class="mb-4 align-center sb-page-header">
       <v-col>
         <div class="d-flex align-center">
-          <div class="designer-icon">
+          <div class="sb-page-icon">
             <v-icon color="primary" size="26">mdi-vector-square</v-icon>
           </div>
           <div>
             <h2 class="mb-1">Disenador</h2>
             <div class="d-flex align-center flex-wrap ga-2">
-              <span class="designer-subtitle text-body-2">
+              <span class="sb-page-subtitle text-body-2">
                 {{ sistema?.name || 'Sistema' }}
               </span>
               <v-chip size="x-small" color="primary" variant="tonal">
@@ -27,7 +27,7 @@
       </v-col>
     </v-row>
 
-    <v-tabs v-model="tab" class="mb-4 designer-tabs">
+    <v-tabs v-model="tab" class="mb-4 sb-tabs">
       <v-tab value="datos">
         <v-icon class="mr-2" size="18">mdi-database</v-icon>
         Datos
@@ -2051,17 +2051,6 @@ function entidadNombre(id) {
 </script>
 
 <style scoped>
-.card {
-  border-radius: 12px;
-}
-
-.table :deep(thead th) {
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  color: #6b7280;
-}
-
 .empty-state {
   padding: 24px;
   color: #6b7280;
@@ -2110,51 +2099,6 @@ function entidadNombre(id) {
 
 .api-textarea :deep(textarea) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.designer-header {
-  background: linear-gradient(135deg, #f8fafc, #ffffff);
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 16px 20px;
-}
-
-.designer-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(25, 118, 210, 0.12);
-  margin-right: 12px;
-}
-
-.designer-subtitle {
-  color: #6b7280;
-}
-
-.designer-tabs {
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-.designer-tabs :deep(.v-tab) {
-  text-transform: none;
-  font-weight: 600;
-  min-height: 40px;
-  color: #6b7280;
-}
-
-.designer-tabs :deep(.v-tab--selected) {
-  background: transparent;
-  color: #1d4ed8;
-}
-
-.designer-tabs :deep(.v-tabs-bar) {
-  height: auto;
-  border-bottom: 1px solid #e5e7eb;
 }
 
 .port-card {
