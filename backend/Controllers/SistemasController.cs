@@ -15,6 +15,7 @@ namespace Backend.Controllers
     public class SistemasController : AppController
     {
         private static readonly ConcurrentDictionary<int, Process> BackendProcesses = new();
+        private static readonly ConcurrentDictionary<int, Process> FrontendProcesses = new();
         private static readonly HttpClient Http = new();
         private readonly IWebHostEnvironment _env;
 
@@ -135,6 +136,27 @@ namespace Backend.Controllers
             result.RestoreError = restoreResult.Error;
 
             return Ok(result);
+        }
+
+        [HttpPost(Routes.v1.Sistemas.GenerarFrontend)]
+        public IActionResult GenerarFrontend(int id, [FromQuery] bool overwrite = false)
+        {
+            var repoRoot = Directory.GetParent(_env.ContentRootPath)?.FullName ?? _env.ContentRootPath;
+            var sistema = SistemasGestor.ObtenerPorId(id);
+            if (sistema == null)
+                return NotFound();
+
+            var frontendSource = Path.Combine(repoRoot, "frontend-runtime");
+            var outputRoot = Path.Combine(repoRoot, "systems", sistema.Slug, "frontend");
+
+            var result = SistemasFrontendGenerator.Generar(id, frontendSource, outputRoot, overwrite);
+            if (result.Ok)
+            {
+                FrontendConfigGestor.HabilitarFrontend(id);
+                return Ok(result);
+            }
+
+            return BadRequest(result);
         }
 
         [HttpPost(Routes.v1.Sistemas.IniciarBackend)]
@@ -269,6 +291,144 @@ namespace Backend.Controllers
             return Ok(new { items, lastId });
         }
 
+        [HttpPost(Routes.v1.Sistemas.IniciarFrontend)]
+        public async Task<IActionResult> IniciarFrontend(int id)
+        {
+            if (!_env.IsDevelopment())
+                return Forbid();
+
+            var repoRoot = Directory.GetParent(_env.ContentRootPath)?.FullName ?? _env.ContentRootPath;
+            var sistema = SistemasGestor.ObtenerPorId(id);
+            if (sistema == null)
+                return NotFound();
+
+            var frontendPath = Path.Combine(repoRoot, "systems", sistema.Slug, "frontend");
+            if (!Directory.Exists(frontendPath))
+                return BadRequest(new { message = "El frontend no esta generado. Genera frontend primero." });
+
+            if (FrontendProcesses.TryGetValue(id, out var existing) && !existing.HasExited)
+            {
+                FrontendProcessLogStore.Add(id, "info", "Inicio solicitado: frontend ya en ejecucion.");
+                return Ok(new { status = "running", message = "El frontend ya esta en ejecucion." });
+            }
+
+            if (await IsFrontendOnline(id))
+            {
+                FrontendProcessLogStore.Add(id, "info", "Inicio solicitado: frontend ya estaba online.");
+                return Ok(new { status = "running", message = "El frontend ya esta en ejecucion." });
+            }
+
+            var logBuffer = FrontendProcessLogStore.Reset(id);
+            logBuffer.Add("info", "Iniciando frontend (npm run dev)...");
+
+            var nodeModules = Path.Combine(frontendPath, "node_modules");
+            if (!Directory.Exists(nodeModules))
+            {
+                logBuffer.Add("info", "Instalando dependencias (npm install)...");
+                var install = RunNpmInstall(frontendPath);
+                if (!install.Ok)
+                {
+                    logBuffer.Add("error", $"npm install fallo: {install.Error}");
+                    return BadRequest(new { message = "npm install fallo. Revisa la consola del frontend." });
+                }
+                logBuffer.Add("info", "npm install ok.");
+            }
+
+            var port = GetFrontendPort(id);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "npm",
+                Arguments = $"run dev -- --port {port}",
+                WorkingDirectory = frontendPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            startInfo.Environment["BROWSER"] = "none";
+            startInfo.Environment["VITE_PORT"] = port.ToString();
+
+            var process = Process.Start(startInfo);
+            if (process == null)
+            {
+                logBuffer.Add("error", "No se pudo iniciar el proceso npm.");
+                return BadRequest(new { message = "No se pudo iniciar el frontend." });
+            }
+
+            process.EnableRaisingEvents = true;
+            process.OutputDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrWhiteSpace(args.Data))
+                    logBuffer.Add("stdout", args.Data);
+            };
+            process.ErrorDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrWhiteSpace(args.Data))
+                    logBuffer.Add("stderr", args.Data);
+            };
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            process.Exited += (_, __) =>
+            {
+                logBuffer.Add("info", $"npm dev terminó (exit code {process.ExitCode}).");
+                FrontendProcesses.TryRemove(id, out Process removedProcess);
+            };
+
+            FrontendProcesses[id] = process;
+            return Ok(new { status = "started", message = "Frontend iniciando...", port });
+        }
+
+        [HttpPost(Routes.v1.Sistemas.DetenerFrontend)]
+        public IActionResult DetenerFrontend(int id)
+        {
+            if (!_env.IsDevelopment())
+                return Forbid();
+
+            if (!FrontendProcesses.TryGetValue(id, out var process) || process.HasExited)
+            {
+                FrontendProcessLogStore.Add(id, "info", "Detener solicitado: frontend no estaba en ejecucion.");
+                return Ok(new { status = "not_running", message = "El frontend no esta en ejecucion." });
+            }
+
+            try
+            {
+                FrontendProcessLogStore.Add(id, "info", "Deteniendo frontend...");
+                process.Kill(true);
+                process.WaitForExit(10000);
+            }
+            catch
+            {
+                // ignore
+            }
+
+            FrontendProcesses.TryRemove(id, out Process removedProcess);
+            FrontendProcessLogStore.Add(id, "info", "Frontend detenido.");
+            return Ok(new { status = "stopped", message = "Frontend detenido." });
+        }
+
+        [HttpGet(Routes.v1.Sistemas.PingFrontend)]
+        public async Task<IActionResult> PingFrontend(int id)
+        {
+            if (!_env.IsDevelopment())
+                return Forbid();
+
+            var online = await IsFrontendOnline(id);
+            return Ok(new { online });
+        }
+
+        [HttpGet(Routes.v1.Sistemas.LogsFrontend)]
+        public IActionResult LogsFrontend(int id, [FromQuery] long after = 0, [FromQuery] int take = 200)
+        {
+            if (!_env.IsDevelopment())
+                return Forbid();
+
+            take = Math.Clamp(take, 1, 500);
+            var buffer = FrontendProcessLogStore.Get(id);
+            var items = buffer.Read(after, take, out var lastId);
+            return Ok(new { items, lastId });
+        }
+
         private async Task<bool> IsBackendOnline(int systemId)
         {
             try
@@ -291,6 +451,27 @@ namespace Backend.Controllers
             var value = string.IsNullOrWhiteSpace(apiBase) ? "api/v1" : apiBase.Trim();
             value = value.Trim('/');
             return "/" + value;
+        }
+
+        private static int GetFrontendPort(int systemId)
+        {
+            return 5173 + systemId;
+        }
+
+        private async Task<bool> IsFrontendOnline(int systemId)
+        {
+            try
+            {
+                var port = GetFrontendPort(systemId);
+                var url = $"http://localhost:{port}";
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                using var response = await Http.GetAsync(url, cts.Token);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private (bool Ok, string Output, string Error) RunDotnetRestore(string workingDirectory)
@@ -319,6 +500,43 @@ namespace Backend.Controllers
                 {
                     try { process.Kill(true); } catch { }
                     return (false, output, "Timeout ejecutando dotnet restore.");
+                }
+
+                var ok = process.ExitCode == 0;
+                return (ok, output, error);
+            }
+            catch (Exception ex)
+            {
+                return (false, string.Empty, ex.Message);
+            }
+        }
+
+        private (bool Ok, string Output, string Error) RunNpmInstall(string workingDirectory)
+        {
+            try
+            {
+                var startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "npm",
+                    Arguments = "install",
+                    WorkingDirectory = workingDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var process = System.Diagnostics.Process.Start(startInfo);
+                if (process == null)
+                    return (false, string.Empty, "No se pudo iniciar npm install.");
+
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+
+                if (!process.WaitForExit(240000))
+                {
+                    try { process.Kill(true); } catch { }
+                    return (false, output, "Timeout ejecutando npm install.");
                 }
 
                 var ok = process.ExitCode == 0;

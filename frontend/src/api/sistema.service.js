@@ -39,6 +39,11 @@ export default {
     return api.post(`/sistemas/${id}/generar-backend?overwrite=${flag}`);
   },
 
+  generarFrontend(id, overwrite = false) {
+    const flag = overwrite ? 'true' : 'false'
+    return api.post(`/sistemas/${id}/generar-frontend?overwrite=${flag}`);
+  },
+
   iniciarBackend(id) {
     return api.post(`/sistemas/${id}/backend/start`);
   },
@@ -53,5 +58,21 @@ export default {
 
   logsBackend(id, after = 0, take = 200) {
     return api.get(`/sistemas/${id}/backend/logs`, { params: { after, take } });
+  },
+
+  iniciarFrontend(id) {
+    return api.post(`/sistemas/${id}/frontend/start`);
+  },
+
+  detenerFrontend(id) {
+    return api.post(`/sistemas/${id}/frontend/stop`);
+  },
+
+  pingFrontend(id) {
+    return api.get(`/sistemas/${id}/frontend/ping`);
+  },
+
+  logsFrontend(id, after = 0, take = 200) {
+    return api.get(`/sistemas/${id}/frontend/logs`, { params: { after, take } });
   }
 };

@@ -1,0 +1,22 @@
+{
+  "system": {
+    "appTitle": "SystemBase",
+    "showSearch": true,
+    "showFilters": true,
+    "defaultItemsPerPage": 10,
+    "itemsPerPageOptions": [10, 20, 50, 100],
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#0ea5e9",
+    "density": "comfortable",
+    "fontFamily": "Inter, system-ui, -apple-system, Segoe UI, sans-serif",
+    "uiMode": "enterprise",
+    "locale": "es-AR",
+    "currency": "ARS",
+    "authMode": "local",
+    "authBaseUrl": "http://localhost:5032/api/v1",
+    "seedAdminUser": "admin",
+    "seedAdminPassword": "admin",
+    "seedAdminEmail": "admin@local"
+  },
+  "entities": []
+}

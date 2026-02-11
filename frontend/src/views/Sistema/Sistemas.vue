@@ -121,6 +121,22 @@
               </v-btn>
             </template>
           </v-tooltip>
+
+          <v-tooltip text="Generar Frontend">
+            <template #activator="{ props }">
+              <v-btn
+                v-if="isAdmin"
+                v-bind="props"
+                icon
+                size="small"
+                color="cyan-darken-2"
+                variant="text"
+                @click="generarFrontend(item)"
+              >
+                <v-icon>mdi-monitor</v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
         </template>
       </v-data-table>
     </v-card>
@@ -341,6 +357,43 @@ async function generarBackend(item) {
             innerError?.response?.data?.message ||
             innerError?.response?.data?.Message ||
             'Error al reemplazar el backend.'
+          window.alert(innerMessage)
+          return
+        }
+      }
+    }
+
+    window.alert(message)
+  }
+}
+
+async function generarFrontend(item) {
+  const ok = window.confirm(`Generar frontend para ${item.name}?`)
+  if (!ok) return
+
+  try {
+    const { data } = await sistemaService.generarFrontend(item.id, false)
+    const outputPath = data?.outputPath || data?.OutputPath
+    window.alert(`Frontend generado en:\n${outputPath}`)
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.Message ||
+      'Error al generar frontend.'
+
+    if (message.includes('overwrite=true')) {
+      const overwrite = window.confirm(`${message}\n\nDeseas reemplazarlo?`)
+      if (overwrite) {
+        try {
+          const { data } = await sistemaService.generarFrontend(item.id, true)
+          const outputPath = data?.outputPath || data?.OutputPath
+          window.alert(`Frontend generado en:\n${outputPath}`)
+          return
+        } catch (innerError) {
+          const innerMessage =
+            innerError?.response?.data?.message ||
+            innerError?.response?.data?.Message ||
+            'Error al reemplazar el frontend.'
           window.alert(innerMessage)
           return
         }

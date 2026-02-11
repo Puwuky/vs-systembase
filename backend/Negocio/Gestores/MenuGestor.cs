@@ -226,17 +226,24 @@ namespace Backend.Negocio.Gestores
                 )
                 .Select(m => new
                 {
-                    m.Id,
                     m.SystemId,
                     SystemName = m.System.Name,
-                    SystemSlug = m.System.Slug,
-                    m.Title,
-                    m.Icon,
-                    m.Route,
-                    m.ParentId,
-                    m.SortOrder
+                    SystemSlug = m.System.Slug
                 })
+                .Distinct()
                 .ToList();
+
+            var frontendModuleId = context.Modules
+                .Where(m => m.Name == "frontend")
+                .Select(m => m.Id)
+                .FirstOrDefault();
+
+            var frontendEnabled = frontendModuleId == 0
+                ? new HashSet<int>()
+                : context.SystemModules
+                    .Where(sm => sm.ModuleId == frontendModuleId && sm.IsEnabled)
+                    .Select(sm => sm.SystemId)
+                    .ToHashSet();
 
             var systemGroups = systemMenus
                 .GroupBy(m => new { m.SystemId, m.SystemName, m.SystemSlug })
@@ -253,16 +260,31 @@ namespace Backend.Negocio.Gestores
                     Orden = 1000 + group.Key.SystemId
                 };
 
-                var entidadesGroup = new MenuTreeResponse
+                if (frontendEnabled.Contains(group.Key.SystemId))
                 {
-                    Id = -200000 - group.Key.SystemId,
-                    Titulo = "Entidades",
-                    Icono = "mdi-database",
-                    Ruta = $"/s/{group.Key.SystemSlug}",
-                    Orden = 1
-                };
+                    systemRoot.Children.Add(new MenuTreeResponse
+                    {
+                        Id = -300000 - group.Key.SystemId,
+                        Titulo = "Frontend",
+                        Icono = "mdi-monitor",
+                        Ruta = $"/s/{group.Key.SystemSlug}",
+                        Orden = 2
+                    });
+                }
+                else
+                {
+                    var entidadesGroup = new MenuTreeResponse
+                    {
+                        Id = -200000 - group.Key.SystemId,
+                        Titulo = "Entidades",
+                        Icono = "mdi-database",
+                        Ruta = $"/s/{group.Key.SystemSlug}",
+                        Orden = 1
+                    };
 
-                systemRoot.Children.Add(entidadesGroup);
+                    systemRoot.Children.Add(entidadesGroup);
+                }
+
                 baseMenu.Add(systemRoot);
             }
 

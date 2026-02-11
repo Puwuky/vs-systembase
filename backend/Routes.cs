@@ -53,10 +53,15 @@ namespace Backend
                 public const string Publicar = "api/v1/sistemas/{id}/publicar";
                 public const string Exportar = "api/v1/sistemas/{id}/export";
                 public const string GenerarBackend = "api/v1/sistemas/{id}/generar-backend";
+                public const string GenerarFrontend = "api/v1/sistemas/{id}/generar-frontend";
                 public const string IniciarBackend = "api/v1/sistemas/{id}/backend/start";
                 public const string DetenerBackend = "api/v1/sistemas/{id}/backend/stop";
                 public const string PingBackend = "api/v1/sistemas/{id}/backend/ping";
                 public const string LogsBackend = "api/v1/sistemas/{id}/backend/logs";
+                public const string IniciarFrontend = "api/v1/sistemas/{id}/frontend/start";
+                public const string DetenerFrontend = "api/v1/sistemas/{id}/frontend/stop";
+                public const string PingFrontend = "api/v1/sistemas/{id}/frontend/ping";
+                public const string LogsFrontend = "api/v1/sistemas/{id}/frontend/logs";
             }
 
             public static class Entidades
@@ -95,6 +100,12 @@ namespace Backend
             {
                 public const string ObtenerConfig = "api/v1/sistemas/{systemId}/backend-config";
                 public const string GuardarConfig = "api/v1/sistemas/{systemId}/backend-config";
+            }
+
+            public static class Frontend
+            {
+                public const string ObtenerConfig = "api/v1/sistemas/{systemId}/frontend-config";
+                public const string GuardarConfig = "api/v1/sistemas/{systemId}/frontend-config";
             }
 
             public static class DevTools

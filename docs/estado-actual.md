@@ -106,7 +106,17 @@ Se agrego un generador para crear un backend CRUD por entidad:
   - Conexión por `.env` (DB + JWT).
   - Auto `dotnet restore` al finalizar (resultado devuelto a la UI).
 
-### 5.3 Configuracion visual de backend
+### 5.3 Generador de frontend (fase inicial)
+Se agrego un generador para crear un frontend runtime por sistema:
+- Endpoint: `POST /api/v1/sistemas/{id}/generar-frontend`
+  - Parametro: `?overwrite=true` para reemplazar si ya existe.
+- Salida: `systems/<slug>/frontend/`
+  - Copia la UI base y elimina vistas administrativas (solo runtime).
+  - Router reducido a `Home` + `SistemaRuntime`.
+  - `axios.js` apunta al backend del sistema (`http://localhost:5032+systemId/{apiBase}`).
+  - Se genera `src/config/frontend-config.json` con la configuracion guardada en el diseñador.
+
+### 5.4 Configuracion visual de backend
 En el diseniador de sistema se agrego una pestania "Backend" para configurar la generacion:
 - Configuracion: `GET/PUT /api/v1/sistemas/{systemId}/backend-config`
 - Config global:
@@ -116,10 +126,10 @@ En el diseniador de sistema se agrego una pestania "Backend" para configurar la 
   - `pagination`, `defaultPageSize`, `maxPageSize`.
   - `endpoints` (list/get/create/update/delete).
   - `filterFieldIds`, `defaultSortFieldId`, `defaultSortDirection`.
-  - Config por campo (expose/readOnly/required/maxLength/unique/defaultValue/displayAs).
+- Config por campo (expose/readOnly/required/maxLength/unique/defaultValue/displayAs).
 - Por defecto todas las entidades se generan si no hay config.
 
-### 5.4 Herramientas dev (backend)
+### 5.5 Herramientas dev (backend)
 En la pestaña **Herramientas** del diseñador:
 - Botones **Iniciar / Detener / Reiniciar** backend del sistema (solo DEV).
 - Healthcheck del backend via SystemBase:
@@ -141,11 +151,15 @@ Ruta: `/sistemas/{id}`
 - Panel de relaciones (FK).
 - Boton "Datos" para abrir runtime.
 - Boton **Publicar DB** ahora vive en la pestaña **Datos**.
-- Pestañas: Datos / Backend / Herramientas.
+- Pestañas: Datos / Backend / Herramientas / Frontend.
 - UI de Herramientas incluye:
   - Consola de logs del backend.
   - Lista de APIs con filtros (por metodo y texto) + colores por metodo.
   - Consola API mejorada (Request/Response).
+- UI de Frontend incluye:
+  - Config global (titulo app, busqueda, filtros, paginacion).
+  - Config por entidad (labels y visibilidad de campos).
+  - Boton **Generar frontend**.
 
 ### 6.3 Runtime
 Ruta: `/s/{slug}/{entidad}` (o `/s/{slug}`).

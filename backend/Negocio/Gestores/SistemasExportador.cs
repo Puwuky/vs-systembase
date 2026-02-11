@@ -113,9 +113,15 @@ namespace Backend.Negocio.Gestores
                 Directory.CreateDirectory(exportPath);
 
                 var metadataSql = ReadMetadataSql(contentRootPath);
-                var adminHash = BCrypt.Net.BCrypt.HashPassword("admin");
+                var frontendConfig = FrontendConfigGestor.ObtenerPorSistema(system.Id);
+                var adminUser = string.IsNullOrWhiteSpace(frontendConfig?.System?.SeedAdminUser) ? "admin" : frontendConfig.System.SeedAdminUser;
+                var adminPassword = string.IsNullOrWhiteSpace(frontendConfig?.System?.SeedAdminPassword) ? "admin" : frontendConfig.System.SeedAdminPassword;
+                var adminEmail = string.IsNullOrWhiteSpace(frontendConfig?.System?.SeedAdminEmail)
+                    ? $"{adminUser}@local"
+                    : frontendConfig.System.SeedAdminEmail;
+                var adminHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
 
-                var databaseSql = BuildDatabaseScript(system, schemaName, metadataSql, adminHash, includeAdminMenus);
+                var databaseSql = BuildDatabaseScript(system, schemaName, metadataSql, adminUser, adminEmail, adminHash, includeAdminMenus);
                 var databasePath = Path.Combine(exportPath, "database.sql");
                 File.WriteAllText(databasePath, databaseSql, new UTF8Encoding(false));
 
@@ -131,7 +137,7 @@ namespace Backend.Negocio.Gestores
                 File.WriteAllText(manifestPath, manifestJson, new UTF8Encoding(false));
 
                 var readmePath = Path.Combine(exportPath, "README.md");
-                File.WriteAllText(readmePath, BuildReadme(system, schemaName, includeAdminMenus), new UTF8Encoding(false));
+                File.WriteAllText(readmePath, BuildReadme(system, schemaName, includeAdminMenus, adminUser, adminPassword), new UTF8Encoding(false));
 
                 var repoRoot = Directory.GetParent(contentRootPath)?.FullName;
                 if (string.IsNullOrWhiteSpace(repoRoot))
@@ -144,13 +150,13 @@ namespace Backend.Negocio.Gestores
                 }
 
                 var backendSource = contentRootPath;
-                var frontendSource = Path.Combine(repoRoot, "frontend");
+                var frontendSource = Path.Combine(repoRoot, "frontend-runtime");
                 if (!Directory.Exists(backendSource) || !Directory.Exists(frontendSource))
                 {
                     return new ExportResult
                     {
                         Ok = false,
-                        Message = "No se encontraron carpetas backend/frontend para exportar."
+                        Message = "No se encontraron carpetas backend/frontend-runtime para exportar."
                     };
                 }
 
@@ -173,7 +179,7 @@ namespace Backend.Negocio.Gestores
 
                 if (!includeAdminMenus)
                 {
-                    ApplyRuntimeOnlyOverlay(backendDest, frontendDest);
+                    // runtime-only template already stripped
                 }
 
                 string? zipFileName = null;
@@ -220,6 +226,8 @@ namespace Backend.Negocio.Gestores
             Systems system,
             string schemaName,
             string? metadataSql,
+            string adminUser,
+            string adminEmail,
             string adminHash,
             bool includeAdminMenus)
         {
@@ -240,7 +248,7 @@ namespace Backend.Negocio.Gestores
 
             sb.AppendLine();
             sb.AppendLine("-- Seed base data (admin + menus)");
-            sb.AppendLine(BuildBaseSeedScript(adminHash, includeAdminMenus));
+            sb.AppendLine(BuildBaseSeedScript(adminUser, adminEmail, adminHash, includeAdminMenus));
             sb.AppendLine();
             sb.AppendLine("-- Seed system metadata");
             sb.AppendLine(BuildSystemMetadataInserts(system));
@@ -316,7 +324,7 @@ namespace Backend.Negocio.Gestores
             return sb.ToString();
         }
 
-        private static string BuildBaseSeedScript(string adminHash, bool includeAdminMenus)
+        private static string BuildBaseSeedScript(string adminUser, string adminEmail, string adminHash, bool includeAdminMenus)
         {
             var sb = new StringBuilder();
 
@@ -327,10 +335,10 @@ namespace Backend.Negocio.Gestores
             sb.AppendLine("END");
             sb.AppendLine();
 
-            sb.AppendLine("IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Username = 'admin')");
+            sb.AppendLine($"IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Username = '{EscapeSql(adminUser)}')");
             sb.AppendLine("BEGIN");
             sb.AppendLine("    INSERT INTO dbo.Usuarios (Username, Email, PasswordHash, Nombre, Apellido, Activo, FechaCreacion, RolId)");
-            sb.AppendLine("    SELECT 'admin', 'admin@local',");
+            sb.AppendLine($"    SELECT '{EscapeSql(adminUser)}', '{EscapeSql(adminEmail)}',");
             sb.AppendLine($"           '{EscapeSql(adminHash)}',");
             sb.AppendLine("           'Admin', 'System', 1, GETDATE(), r.Id");
             sb.AppendLine("    FROM dbo.Roles r");
@@ -764,7 +772,7 @@ END");
             };
         }
 
-        private static string BuildReadme(Systems system, string schemaName, bool includeAdminMenus)
+        private static string BuildReadme(Systems system, string schemaName, bool includeAdminMenus, string adminUser, string adminPassword)
         {
             var version = string.IsNullOrWhiteSpace(system.Version) ? "-" : system.Version.Trim();
             var modo = includeAdminMenus ? "FULL (incluye administracion)" : "RUNTIME-ONLY (solo modulo)";
@@ -778,13 +786,13 @@ Modo: {modo}
 
 ## Incluye
 - `database.sql`: schema + metadata + runtime.
-- `backend/`: API completa (igual a SystemBase).
-- `frontend/`: UI completa (igual a SystemBase).
+- `backend/`: API del sistema exportado.
+- `frontend/`: UI runtime del sistema exportado.
 - `manifest.json`: definicion del sistema.
 
 ## Credenciales de prueba
-- Usuario: `admin`
-- Password: `admin`
+- Usuario: `{adminUser}`
+- Password: `{adminPassword}`
 
 ## Uso rapido
 1. Crear una base de datos en SQL Server.
@@ -898,60 +906,7 @@ namespace Backend.Controllers
 ";
             File.WriteAllText(Path.Combine(runtimeControllersDir, "EntidadesRuntimeController.cs"), entidadesRuntimeController, new UTF8Encoding(false));
 
-            // Frontend: remove admin views and reduce routes
-            DeleteIfExists(Path.Combine(frontendPath, "src", "views", "Sistema", "Sistemas.vue"));
-            DeleteIfExists(Path.Combine(frontendPath, "src", "views", "Sistema", "SistemaEditor.vue"));
-            DeleteIfExists(Path.Combine(frontendPath, "src", "views", "Sistema", "Menu.vue"));
-            DeleteIfExists(Path.Combine(frontendPath, "src", "views", "Sistema", "Roles.vue"));
-            DeleteIfExists(Path.Combine(frontendPath, "src", "views", "Sistema", "Usuarios.vue"));
-
-            var routerPath = Path.Combine(frontendPath, "src", "router", "index.js");
-            if (File.Exists(routerPath))
-            {
-                var runtimeRouter = @"import { createRouter, createWebHistory } from 'vue-router'
-
-import Login from '../views/Login.vue'
-import Register from '../views/Register.vue'
-import Home from '../views/Home.vue'
-import SistemaRuntime from '../views/Sistema/SistemaRuntime.vue'
-import MainLayout from '../components/Layouts/MainLayout.vue'
-
-const routes = [
-  { path: '/', redirect: '/login' },
-  { path: '/login', component: Login },
-  { path: '/register', component: Register },
-  {
-    path: '/',
-    component: MainLayout,
-    children: [
-      { path: 'home', component: Home },
-      { path: 's/:slug', component: SistemaRuntime },
-      { path: 's/:slug/:entity', component: SistemaRuntime },
-      { path: ':autoPath(.*)*', redirect: '/home' }
-    ]
-  }
-]
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
-
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  const publicRoutes = ['/login', '/register']
-
-  if (!token && !publicRoutes.includes(to.path)) {
-    next('/login')
-  } else {
-    next()
-  }
-})
-
-export default router
-";
-                File.WriteAllText(routerPath, runtimeRouter, new UTF8Encoding(false));
-            }
+            // runtime template already has runtime-only routing
         }
 
         private static void DeleteIfExists(string path)

@@ -40,6 +40,10 @@
         <v-icon class="mr-2" size="18">mdi-tools</v-icon>
         Herramientas
       </v-tab>
+      <v-tab value="frontend">
+        <v-icon class="mr-2" size="18">mdi-monitor</v-icon>
+        Frontend
+      </v-tab>
     </v-tabs>
 
     <v-window v-model="tab">
@@ -574,6 +578,391 @@
                   </v-card-text>
                 </v-card>
               </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-window-item>
+
+      <v-window-item value="frontend">
+        <v-row class="mt-2">
+          <v-col cols="12">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-monitor</v-icon>
+                  <span class="text-h6 font-weight-medium">Frontend</span>
+                </div>
+                <div class="d-flex ga-2">
+                  <v-btn color="primary" size="small" @click="guardarFrontendConfig">
+                    <v-icon left>mdi-content-save</v-icon>
+                    Guardar
+                  </v-btn>
+                  <v-btn color="teal" size="small" @click="generarFrontend">
+                    <v-icon left>mdi-code-tags</v-icon>
+                    Generar frontend
+                  </v-btn>
+                </div>
+              </v-card-title>
+
+              <v-divider />
+
+              <v-card-text>
+                <v-alert type="info" variant="tonal" class="mb-4">
+                  Genera el frontend runtime del sistema en <span class="mono">systems/{{ sistema?.slug || 'slug' }}/frontend</span>.
+                  Incluye rutas runtime y elimina pantallas administrativas.
+                </v-alert>
+
+                <v-card elevation="1" class="mb-4 card">
+                  <v-card-title class="d-flex align-center justify-space-between">
+                    <div class="d-flex align-center">
+                      <v-icon class="mr-2" color="primary">mdi-monitor-play</v-icon>
+                      <span class="text-subtitle-1 font-weight-medium">Runtime frontend</span>
+                    </div>
+                    <div class="d-flex align-center ga-2 flex-wrap">
+                      <v-chip size="small" :color="frontendHealthColor" variant="tonal">
+                        Frontend: {{ frontendHealthLabel }}
+                      </v-chip>
+                      <v-btn size="x-small" variant="text" color="primary" @click="checkFrontendHealth">
+                        <v-icon left size="16">mdi-refresh</v-icon>
+                        Actualizar
+                      </v-btn>
+                      <v-btn
+                        v-if="frontendHealth.status !== 'online'"
+                        color="blue"
+                        size="small"
+                        @click="iniciarFrontend"
+                      >
+                        <v-icon left>mdi-play</v-icon>
+                        Iniciar frontend
+                      </v-btn>
+                      <v-btn
+                        v-if="frontendHealth.status === 'online'"
+                        color="red"
+                        size="small"
+                        @click="detenerFrontend"
+                      >
+                        <v-icon left>mdi-stop</v-icon>
+                        Detener frontend
+                      </v-btn>
+                      <v-btn color="orange" size="small" @click="reiniciarFrontend">
+                        <v-icon left>mdi-restart</v-icon>
+                        Reiniciar frontend
+                      </v-btn>
+                      <v-btn
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        :href="frontendBaseUrl"
+                        target="_blank"
+                      >
+                        <v-icon left>mdi-open-in-new</v-icon>
+                        Abrir
+                      </v-btn>
+                    </div>
+                  </v-card-title>
+
+                  <v-divider />
+
+                  <v-card-text>
+                    <v-dialog v-model="frontendDialog.open" max-width="420">
+                      <v-card>
+                        <v-card-title>Frontend</v-card-title>
+                        <v-card-text>
+                          <div class="mb-2">{{ frontendDialog.message }}</div>
+                          <v-progress-linear
+                            v-if="frontendDialog.status === 'restarting' || frontendDialog.status === 'waiting'"
+                            indeterminate
+                            color="primary"
+                          />
+                          <v-alert v-if="frontendDialog.status === 'online'" type="success" variant="tonal" class="mt-3">
+                            Frontend listo.
+                          </v-alert>
+                          <v-alert v-if="frontendDialog.status === 'error' || frontendDialog.status === 'timeout'" type="error" variant="tonal" class="mt-3">
+                            No pudimos confirmar el frontend.
+                          </v-alert>
+                        </v-card-text>
+                        <v-card-actions>
+                          <v-spacer />
+                          <v-btn variant="text" @click="frontendDialog.open = false">Cerrar</v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-dialog>
+
+                    <v-row>
+                      <v-col cols="12" md="6">
+                        <v-card elevation="1" class="port-card">
+                          <v-card-title class="d-flex align-center justify-space-between">
+                            <div class="d-flex align-center">
+                              <v-icon class="mr-2" color="primary">mdi-laptop</v-icon>
+                              <span class="text-body-2 font-weight-medium">Frontend del sistema</span>
+                            </div>
+                            <v-btn
+                              size="x-small"
+                              variant="text"
+                              color="primary"
+                              @click="copiarTexto(frontendBaseUrl, 'URL del frontend')"
+                            >
+                              <v-icon left size="16">mdi-content-copy</v-icon>
+                              Copiar
+                            </v-btn>
+                          </v-card-title>
+                          <v-card-text class="pt-0">
+                            <div class="mono port-value">{{ frontendBaseUrl }}</div>
+                          </v-card-text>
+                        </v-card>
+                      </v-col>
+                      <v-col cols="12" md="6" class="d-flex align-center">
+                        <div class="text-body-2 text-medium-emphasis">
+                          Si es la primera vez, el boton iniciar corre <span class="mono">npm install</span> antes de levantar.
+                        </div>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+
+                <v-row>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="frontendConfig.system.appTitle"
+                      label="Titulo de la app"
+                      density="compact"
+                      hint="Se usa en el header del runtime"
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model.number="frontendConfig.system.defaultItemsPerPage"
+                      label="Items por pagina"
+                      type="number"
+                      density="compact"
+                      hint="Valor por defecto en listados"
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="frontendItemsPerPageText"
+                      label="Opciones de paginacion"
+                      density="compact"
+                      hint="Ej: 10, 20, 50, 100"
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch
+                      v-model="frontendConfig.system.showSearch"
+                      label="Mostrar busqueda"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-switch
+                      v-model="frontendConfig.system.showFilters"
+                      label="Mostrar filtros"
+                      color="green"
+                      :base-color="'grey'"
+                      density="compact"
+                      hide-details
+                    />
+                  </v-col>
+                </v-row>
+
+                <v-divider class="my-4" />
+
+                <v-row>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model="frontendConfig.system.primaryColor"
+                      label="Color primario"
+                      type="color"
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model="frontendConfig.system.secondaryColor"
+                      label="Color secundario"
+                      type="color"
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-select
+                      v-model="frontendConfig.system.density"
+                      :items="frontendDensityOptions"
+                      label="Densidad"
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-select
+                      v-model="frontendConfig.system.uiMode"
+                      :items="frontendUiModeOptions"
+                      label="Modo UI"
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="frontendConfig.system.fontFamily"
+                      label="Tipografia (font-family)"
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model="frontendConfig.system.locale"
+                      label="Locale"
+                      density="compact"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="3">
+                    <v-text-field
+                      v-model="frontendConfig.system.currency"
+                      label="Moneda"
+                      density="compact"
+                    />
+                  </v-col>
+                </v-row>
+
+                <v-divider class="my-4" />
+
+                <v-row>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="frontendConfig.system.authMode"
+                      :items="frontendAuthModeOptions"
+                      item-title="title"
+                      item-value="value"
+                      label="Auth"
+                      density="compact"
+                      hint="Local = backend del sistema. Central = SystemBase."
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="8">
+                    <v-text-field
+                      v-model="frontendConfig.system.authBaseUrl"
+                      label="Auth base URL"
+                      density="compact"
+                      :disabled="frontendConfig.system.authMode !== 'central'"
+                      hint="Solo aplica si Auth = Central. Ej: http://localhost:5032/api/v1"
+                      persistent-hint
+                    />
+                  </v-col>
+                </v-row>
+
+                <v-divider class="my-4" />
+
+                <v-row>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="frontendConfig.system.seedAdminUser"
+                      label="Seed admin usuario"
+                      density="compact"
+                      hint="Usuario por defecto en export"
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="frontendConfig.system.seedAdminPassword"
+                      label="Seed admin contraseña"
+                      type="password"
+                      density="compact"
+                      hint="Password por defecto en export"
+                      persistent-hint
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-text-field
+                      v-model="frontendConfig.system.seedAdminEmail"
+                      label="Seed admin email"
+                      density="compact"
+                      hint="Email por defecto en export"
+                      persistent-hint
+                    />
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <v-row class="mt-4">
+          <v-col cols="12">
+            <v-card elevation="2" class="card">
+              <v-card-title class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-2" color="primary">mdi-format-list-bulleted</v-icon>
+                  <span class="text-h6 font-weight-medium">Entidades UI</span>
+                </div>
+              </v-card-title>
+
+              <v-divider />
+
+              <div class="text-caption text-medium-emphasis mb-2">Arrastra para ordenar las entidades.</div>
+              <v-table density="compact" class="table frontend-entities-table">
+                <thead>
+                  <tr>
+                    <th class="text-caption">Orden</th>
+                    <th class="text-caption">Entidad</th>
+                    <th class="text-caption">Menu</th>
+                    <th class="text-caption">Visible</th>
+                    <th class="text-caption">Icono</th>
+                    <th class="text-caption">Ruta</th>
+                    <th class="text-caption">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, index) in frontendConfig.entities"
+                    :key="item.entityId || item.id || index"
+                    class="frontend-field-row"
+                    :class="{ 'is-drag-over': index === frontendEntityDragOver }"
+                    @dragover.prevent="onFrontendEntityDragOver(index)"
+                    @drop.prevent="onFrontendEntityDrop(index)"
+                  >
+                    <td class="drag-cell">
+                      <v-icon
+                        class="drag-handle"
+                        size="16"
+                        draggable="true"
+                        @dragstart="onFrontendEntityDragStart(index)"
+                        @dragend="onFrontendEntityDragEnd"
+                      >
+                        mdi-drag
+                      </v-icon>
+                    </td>
+                    <td>{{ frontendEntityLabel(item) }}</td>
+                    <td>{{ item.menuLabel || frontendEntityLabel(item) }}</td>
+                    <td>
+                      <v-switch
+                        v-model="item.showInMenu"
+                        color="green"
+                        :base-color="'grey'"
+                        density="compact"
+                        hide-details
+                      />
+                    </td>
+                    <td>
+                      <v-text-field v-model="item.menuIcon" density="compact" hide-details />
+                    </td>
+                    <td>
+                      <v-text-field v-model="item.routeSlug" density="compact" hide-details />
+                    </td>
+                    <td>
+                      <v-btn size="small" variant="text" color="primary" @click="abrirFrontendEntidad(item)">
+                        Configurar
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </v-table>
             </v-card>
           </v-col>
         </v-row>
@@ -1159,6 +1548,370 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="mostrarFrontendDialog" max-width="1000">
+      <v-card>
+        <v-card-title class="d-flex align-center justify-space-between">
+          <div>
+            Configurar frontend -
+            {{ frontendEntidadActual?.displayName || frontendEntidadActual?.name || '' }}
+          </div>
+          <v-btn icon variant="text" @click="mostrarFrontendDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+
+        <v-divider />
+
+        <v-card-text v-if="frontendEntidadActual">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="frontendEntidadActual.displayName"
+                label="Titulo en vista"
+                hint="Se usa en el header y listados"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="frontendEntidadActual.menuLabel"
+                label="Etiqueta en menu"
+                hint="Texto mostrado en la lista de entidades"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12" md="4">
+              <v-switch
+                v-model="frontendEntidadActual.showInMenu"
+                label="Mostrar en menu"
+                color="green"
+                :base-color="'grey'"
+                density="compact"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="frontendEntidadActual.menuIcon"
+                label="Icono menu (mdi-*)"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="frontendEntidadActual.routeSlug"
+                label="Ruta personalizada"
+                hint="Ej: productos"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-select
+                v-model="frontendEntidadActual.formLayout"
+                :items="frontendFormLayoutOptions"
+                label="Layout del formulario"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-select
+                v-model="frontendEntidadActual.defaultSortFieldId"
+                :items="frontendEntidadActual.fields"
+                item-title="name"
+                item-value="fieldId"
+                label="Orden por defecto"
+                density="compact"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-select
+                v-model="frontendEntidadActual.defaultSortDirection"
+                :items="frontendSortOptions"
+                label="Direccion"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                v-model="frontendEntidadActual.listStickyHeader"
+                label="Header fijo"
+                color="green"
+                :base-color="'grey'"
+                density="compact"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                v-model="frontendEntidadActual.listShowTotals"
+                label="Mostrar totales"
+                color="green"
+                :base-color="'grey'"
+                density="compact"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                v-model="frontendEntidadActual.enableDuplicate"
+                label="Permitir duplicar"
+                color="green"
+                :base-color="'grey'"
+                density="compact"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                v-model="frontendEntidadActual.confirmSave"
+                label="Confirmar guardado"
+                color="green"
+                :base-color="'grey'"
+                density="compact"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                v-model="frontendEntidadActual.confirmDelete"
+                label="Confirmar borrado"
+                color="green"
+                :base-color="'grey'"
+                density="compact"
+                hide-details
+              />
+            </v-col>
+          </v-row>
+
+          <v-row>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="frontendEntidadActual.messages.empty"
+                label="Mensaje vacio"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="frontendEntidadActual.messages.error"
+                label="Mensaje error"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="frontendEntidadActual.messages.successCreate"
+                label="Mensaje crear"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="frontendEntidadActual.messages.successUpdate"
+                label="Mensaje editar"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field
+                v-model="frontendEntidadActual.messages.successDelete"
+                label="Mensaje borrar"
+                density="compact"
+              />
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-4" />
+
+          <div class="text-subtitle-2 mb-2">Campos</div>
+          <div class="text-caption text-medium-emphasis mb-2">Arrastra para ordenar los campos.</div>
+          <v-table density="compact" class="table frontend-fields-table">
+            <thead>
+              <tr>
+                <th class="text-caption">Orden</th>
+                <th class="text-caption">Campo</th>
+                <th class="text-caption">Label</th>
+                <th class="text-caption">Listar</th>
+                <th class="text-caption">Form</th>
+                <th class="text-caption">Filtro</th>
+                <th class="text-caption">Config</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in frontendEntidadActual.fields"
+                :key="item.fieldId || item.id || index"
+                class="frontend-field-row"
+                :class="{ 'is-drag-over': index === frontendFieldDragOver }"
+                @dragover.prevent="onFrontendFieldDragOver(index)"
+                @drop.prevent="onFrontendFieldDrop(index)"
+              >
+                <td class="drag-cell">
+                  <v-icon
+                    class="drag-handle"
+                    size="16"
+                    draggable="true"
+                    @dragstart="onFrontendFieldDragStart(index)"
+                    @dragend="onFrontendFieldDragEnd"
+                  >
+                    mdi-drag
+                  </v-icon>
+                </td>
+                <td>{{ item.name || item.columnName }}</td>
+                <td>
+                  <v-text-field v-model="item.label" density="compact" hide-details />
+                </td>
+                <td>
+                  <v-switch
+                    v-model="item.showInList"
+                    color="green"
+                    :base-color="'grey'"
+                    density="compact"
+                    hide-details
+                  />
+                </td>
+                <td>
+                  <v-switch
+                    v-model="item.showInForm"
+                    color="green"
+                    :base-color="'grey'"
+                    density="compact"
+                    hide-details
+                  />
+                </td>
+                <td>
+                  <v-switch
+                    v-model="item.showInFilter"
+                    color="green"
+                    :base-color="'grey'"
+                    density="compact"
+                    hide-details
+                  />
+                </td>
+                <td>
+                  <v-btn size="x-small" variant="text" color="primary" @click="abrirFrontendField(item)">
+                    Configurar
+                  </v-btn>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </v-card-text>
+
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="mostrarFrontendDialog = false">Cerrar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="mostrarFrontendFieldDialog" max-width="720">
+      <v-card>
+        <v-card-title class="d-flex align-center justify-space-between">
+          <div>
+            Configurar campo -
+            {{ frontendFieldActual?.label || frontendFieldActual?.name || '' }}
+          </div>
+          <v-btn icon variant="text" @click="mostrarFrontendFieldDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+
+        <v-divider />
+
+        <v-card-text v-if="frontendFieldActual">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="frontendFieldActual.inputType"
+                :items="frontendFieldInputOptions"
+                label="Tipo de input"
+                density="compact"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="frontendFieldActual.format"
+                :items="frontendFieldFormatOptions"
+                label="Formato en listado"
+                density="compact"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="frontendFieldActual.placeholder"
+                label="Placeholder"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="frontendFieldActual.helpText"
+                label="Texto de ayuda"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="frontendFieldActual.section"
+                label="Seccion"
+                hint="Se usa para agrupar el formulario"
+                persistent-hint
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-text-field
+                v-model.number="frontendFieldActual.min"
+                label="Min"
+                type="number"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="3">
+              <v-text-field
+                v-model.number="frontendFieldActual.max"
+                label="Max"
+                type="number"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12">
+              <v-text-field
+                v-model="frontendFieldActual.pattern"
+                label="Regex"
+                density="compact"
+              />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-switch
+                v-model="frontendFieldActual.quickToggle"
+                color="green"
+                :base-color="'grey'"
+                density="compact"
+                label="Accion rapida"
+                hide-details
+              />
+            </v-col>
+          </v-row>
+        </v-card-text>
+
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="mostrarFrontendFieldDialog = false">Cerrar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <EntidadDialog v-model="mostrarEntidadDialog" :entidad="entidadSeleccionadaEdicion" :system-id="systemId"
       @guardado="cargarEntidades" />
 
@@ -1174,6 +1927,7 @@
 import { onMounted, onBeforeUnmount, ref, computed, watch, reactive, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import sistemaService from '../../api/sistema.service.js'
+import frontendConfigService from '../../api/frontendConfig.service.js'
 import entidadService from '../../api/entidad.service.js'
 import campoService from '../../api/campo.service.js'
 import relacionService from '../../api/relacion.service.js'
@@ -1215,6 +1969,14 @@ const mostrarRelacionDialog = ref(false)
 const relacionSeleccionada = ref(null)
 const mostrarBackendDialog = ref(false)
 const backendEntidadActual = ref(null)
+const mostrarFrontendDialog = ref(false)
+const frontendEntidadActual = ref(null)
+const mostrarFrontendFieldDialog = ref(false)
+const frontendFieldActual = ref(null)
+const frontendFieldDragIndex = ref(null)
+const frontendFieldDragOver = ref(null)
+const frontendEntityDragIndex = ref(null)
+const frontendEntityDragOver = ref(null)
 const apiConsole = ref({
   baseUrl: '',
   method: 'GET',
@@ -1237,8 +1999,40 @@ const restartDialog = reactive({
   status: 'idle',
   message: ''
 })
+const frontendDialog = reactive({
+  open: false,
+  status: 'idle',
+  message: ''
+})
+
+const frontendConfig = ref({
+  system: {
+    appTitle: 'SystemBase',
+    showSearch: true,
+    showFilters: true,
+    defaultItemsPerPage: 10,
+    itemsPerPageOptions: [10, 20, 50, 100],
+    primaryColor: '#2563eb',
+    secondaryColor: '#0ea5e9',
+    density: 'comfortable',
+    fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, sans-serif',
+    uiMode: 'enterprise',
+    locale: 'es-AR',
+    currency: 'ARS',
+    authMode: 'local',
+    authBaseUrl: 'http://localhost:5032/api/v1',
+    seedAdminUser: 'admin',
+    seedAdminPassword: 'admin',
+    seedAdminEmail: 'admin@local'
+  },
+  entities: []
+})
 
 const backendHealth = reactive({
+  status: 'unknown',
+  lastChecked: null
+})
+const frontendHealth = reactive({
   status: 'unknown',
   lastChecked: null
 })
@@ -1333,11 +2127,64 @@ const backendSortOptions = [
   'desc'
 ]
 
+const frontendDensityOptions = [
+  'comfortable',
+  'compact',
+  'default'
+]
+
+const frontendUiModeOptions = [
+  'enterprise',
+  'minimal'
+]
+
+const frontendAuthModeOptions = [
+  { title: 'Local (backend del sistema)', value: 'local' },
+  { title: 'Central (SystemBase)', value: 'central' }
+]
+
+const frontendFieldInputOptions = [
+  'auto',
+  'text',
+  'textarea',
+  'number',
+  'date',
+  'datetime',
+  'select',
+  'checkbox',
+  'switch'
+]
+
+const frontendFieldFormatOptions = [
+  'text',
+  'uppercase',
+  'lowercase',
+  'date',
+  'datetime',
+  'money',
+  'badge',
+  'boolean'
+]
+
+const frontendFormLayoutOptions = [
+  'single',
+  'sections',
+  'tabs'
+]
+
+const frontendSortOptions = [
+  'asc',
+  'desc'
+]
+
 const baseBackendPort = 5032
 const backendPort = computed(() => baseBackendPort + (Number.isFinite(systemId) ? systemId : 0))
 const backendBaseUrl = computed(() => `http://localhost:${backendPort.value}`)
 const systembaseBaseUrl = computed(() => `http://localhost:${baseBackendPort}`)
 const portsFilePath = computed(() => 'systems/ports.json')
+const baseFrontendPort = 5173
+const frontendPort = computed(() => baseFrontendPort + (Number.isFinite(systemId) ? systemId : 0))
+const frontendBaseUrl = computed(() => `http://localhost:${frontendPort.value}`)
 
 const backendHealthLabel = computed(() => {
   if (backendHealth.status === 'online') return 'Online'
@@ -1350,6 +2197,20 @@ const backendHealthColor = computed(() => {
   if (backendHealth.status === 'online') return 'green'
   if (backendHealth.status === 'offline') return 'red'
   if (backendHealth.status === 'checking') return 'orange'
+  return 'grey'
+})
+
+const frontendHealthLabel = computed(() => {
+  if (frontendHealth.status === 'online') return 'Online'
+  if (frontendHealth.status === 'offline') return 'Offline'
+  if (frontendHealth.status === 'checking') return 'Verificando...'
+  return 'Sin estado'
+})
+
+const frontendHealthColor = computed(() => {
+  if (frontendHealth.status === 'online') return 'green'
+  if (frontendHealth.status === 'offline') return 'red'
+  if (frontendHealth.status === 'checking') return 'orange'
   return 'grey'
 })
 
@@ -1403,6 +2264,22 @@ const apiMethodOptions = [
   { title: 'PUT', value: 'PUT' },
   { title: 'DELETE', value: 'DELETE' }
 ]
+
+const frontendItemsPerPageText = computed({
+  get() {
+    const options = frontendConfig.value?.system?.itemsPerPageOptions || []
+    return options.join(', ')
+  },
+  set(value) {
+    const numbers = String(value)
+      .split(',')
+      .map(v => parseInt(v.trim(), 10))
+      .filter(n => Number.isFinite(n) && n > 0)
+    if (numbers.length) {
+      frontendConfig.value.system.itemsPerPageOptions = numbers
+    }
+  }
+})
 
 function apiMethodColor(method) {
   if (method === 'GET') return 'green'
@@ -1904,6 +2781,122 @@ async function esperarBackendOnline() {
   return false
 }
 
+async function iniciarFrontend() {
+  const ok = window.confirm('Iniciar frontend? (modo dev)')
+  if (!ok) return
+
+  try {
+    frontendDialog.open = true
+    frontendDialog.status = 'restarting'
+    frontendDialog.message = 'Iniciando frontend...'
+
+    await sistemaService.iniciarFrontend(systemId)
+
+    frontendDialog.status = 'waiting'
+    frontendDialog.message = 'Esperando que el frontend este online...'
+
+    const online = await esperarFrontendOnline()
+    if (online) {
+      frontendDialog.status = 'online'
+      frontendDialog.message = 'Frontend iniciado.'
+      frontendHealth.status = 'online'
+      setTimeout(() => {
+        frontendDialog.open = false
+      }, 1200)
+    } else {
+      frontendDialog.status = 'timeout'
+      frontendDialog.message = 'Timeout esperando el frontend.'
+    }
+  } catch (error) {
+    frontendDialog.status = 'error'
+    frontendDialog.message = error?.response?.data?.message || error?.message || 'Error al iniciar frontend.'
+  }
+}
+
+async function detenerFrontend() {
+  const ok = window.confirm('Detener frontend?')
+  if (!ok) return
+
+  try {
+    frontendDialog.open = true
+    frontendDialog.status = 'restarting'
+    frontendDialog.message = 'Deteniendo frontend...'
+
+    await sistemaService.detenerFrontend(systemId)
+
+    frontendHealth.status = 'offline'
+    frontendDialog.status = 'online'
+    frontendDialog.message = 'Frontend detenido.'
+    setTimeout(() => {
+      frontendDialog.open = false
+    }, 1200)
+  } catch (error) {
+    frontendDialog.status = 'error'
+    frontendDialog.message = error?.response?.data?.message || error?.message || 'Error al detener frontend.'
+  }
+}
+
+async function reiniciarFrontend() {
+  const ok = window.confirm('Reiniciar frontend?')
+  if (!ok) return
+
+  try {
+    frontendDialog.open = true
+    frontendDialog.status = 'restarting'
+    frontendDialog.message = 'Reiniciando frontend...'
+
+    await sistemaService.detenerFrontend(systemId)
+    await sistemaService.iniciarFrontend(systemId)
+
+    frontendDialog.status = 'waiting'
+    frontendDialog.message = 'Esperando que el frontend vuelva...'
+
+    const online = await esperarFrontendOnline()
+    if (online) {
+      frontendDialog.status = 'online'
+      frontendDialog.message = 'Frontend reiniciado.'
+      frontendHealth.status = 'online'
+      setTimeout(() => {
+        frontendDialog.open = false
+      }, 1200)
+    } else {
+      frontendDialog.status = 'timeout'
+      frontendDialog.message = 'Timeout esperando el frontend.'
+    }
+  } catch (error) {
+    frontendDialog.status = 'error'
+    frontendDialog.message = error?.response?.data?.message || error?.message || 'Error al reiniciar frontend.'
+  }
+}
+
+async function esperarFrontendOnline() {
+  const maxAttempts = 20
+  for (let i = 0; i < maxAttempts; i += 1) {
+    try {
+      const { data } = await sistemaService.pingFrontend(systemId)
+      if (data?.online) return true
+    } catch {
+      // ignore
+    }
+    await new Promise(resolve => setTimeout(resolve, 800))
+  }
+
+  return false
+}
+
+async function checkFrontendHealth() {
+  frontendHealth.status = 'checking'
+
+  try {
+    const { data } = await sistemaService.pingFrontend(systemId)
+    frontendHealth.status = data?.online ? 'online' : 'offline'
+  } catch {
+    frontendHealth.status = 'offline'
+  } finally {
+    frontendHealth.lastChecked = new Date().toISOString()
+  }
+}
+
 async function checkBackendHealth() {
   backendHealth.status = 'checking'
 
@@ -1983,6 +2976,187 @@ function stopLogsPolling() {
   // no-op (polling disabled)
 }
 
+async function cargarFrontendConfig() {
+  if (!systemId) return
+  try {
+    const { data } = await frontendConfigService.getBySystem(systemId)
+    frontendConfig.value = data
+    ensureFrontendSystemConfig(frontendConfig.value?.system)
+    if (frontendConfig.value?.entities?.length) {
+      frontendConfig.value.entities.forEach(entity => ensureFrontendEntityConfig(entity))
+    }
+  } catch {
+    // keep defaults
+  }
+}
+
+async function guardarFrontendConfig() {
+  if (!systemId) return
+  try {
+    await frontendConfigService.guardar(systemId, frontendConfig.value)
+    window.alert('Configuracion de frontend guardada.')
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.Message ||
+      'Error al guardar configuracion de frontend.'
+    window.alert(message)
+  }
+}
+
+function frontendEntityLabel(entity) {
+  return entity?.displayName || entity?.name || ''
+}
+
+function ensureFrontendSystemConfig(systemConfig) {
+  if (!systemConfig) return
+  if (!systemConfig.authMode) systemConfig.authMode = 'local'
+  if (!systemConfig.authBaseUrl) systemConfig.authBaseUrl = 'http://localhost:5032/api/v1'
+  if (!systemConfig.seedAdminUser) systemConfig.seedAdminUser = 'admin'
+  if (systemConfig.seedAdminPassword === undefined || systemConfig.seedAdminPassword === null || systemConfig.seedAdminPassword === '') {
+    systemConfig.seedAdminPassword = 'admin'
+  }
+  if (!systemConfig.seedAdminEmail) {
+    const user = systemConfig.seedAdminUser || 'admin'
+    systemConfig.seedAdminEmail = `${user}@local`
+  }
+}
+
+function ensureFrontendEntityConfig(entityConfig) {
+  if (!entityConfig) return
+  if (entityConfig.showInMenu === undefined) entityConfig.showInMenu = true
+  if (!entityConfig.menuIcon) entityConfig.menuIcon = 'mdi-table'
+  if (entityConfig.routeSlug === undefined) entityConfig.routeSlug = ''
+  if (entityConfig.listStickyHeader === undefined) entityConfig.listStickyHeader = false
+  if (entityConfig.listShowTotals === undefined) entityConfig.listShowTotals = true
+  if (!entityConfig.defaultSortDirection) entityConfig.defaultSortDirection = 'asc'
+  if (!entityConfig.formLayout) entityConfig.formLayout = 'single'
+  if (entityConfig.confirmSave === undefined) entityConfig.confirmSave = true
+  if (entityConfig.confirmDelete === undefined) entityConfig.confirmDelete = true
+  if (entityConfig.enableDuplicate === undefined) entityConfig.enableDuplicate = true
+  if (!entityConfig.messages) {
+    entityConfig.messages = {
+      empty: 'No hay registros todavia.',
+      error: 'Ocurrio un error al procesar la solicitud.',
+      successCreate: 'Registro creado.',
+      successUpdate: 'Registro actualizado.',
+      successDelete: 'Registro eliminado.'
+    }
+  }
+}
+
+function ensureFrontendFieldConfigs(entityConfig, fields) {
+  if (!entityConfig.fields) entityConfig.fields = []
+  const map = new Map(entityConfig.fields.map(f => [f.fieldId, f]))
+  fields.forEach(field => {
+    if (map.has(field.id)) {
+      const existing = map.get(field.id)
+      if (!existing.dataType && field.dataType) existing.dataType = field.dataType
+      if (existing.isPrimaryKey === undefined) existing.isPrimaryKey = field.isPrimaryKey
+      if (existing.isIdentity === undefined) existing.isIdentity = field.isIdentity
+      if (existing.required === undefined) existing.required = field.required
+      if (existing.maxLength === undefined || existing.maxLength === null) existing.maxLength = field.maxLength
+      return
+    }
+    entityConfig.fields.push({
+      fieldId: field.id,
+      name: field.name,
+      columnName: field.columnName,
+      dataType: field.dataType,
+      isPrimaryKey: field.isPrimaryKey,
+      isIdentity: field.isIdentity,
+      required: field.required,
+      maxLength: field.maxLength,
+      label: field.name,
+      showInList: true,
+      showInForm: !field.isIdentity,
+      showInFilter: true,
+      placeholder: '',
+      helpText: '',
+      inputType: '',
+      section: 'General',
+      format: '',
+      min: null,
+      max: null,
+      pattern: '',
+      quickToggle: false
+    })
+  })
+}
+
+function onFrontendFieldDragStart(index) {
+  frontendFieldDragIndex.value = index
+}
+
+function onFrontendFieldDragOver(index) {
+  frontendFieldDragOver.value = index
+}
+
+function onFrontendFieldDrop(index) {
+  const from = frontendFieldDragIndex.value
+  if (from === null || from === undefined) return
+  if (!frontendEntidadActual.value?.fields?.length) return
+  if (from === index) {
+    frontendFieldDragIndex.value = null
+    frontendFieldDragOver.value = null
+    return
+  }
+
+  const list = frontendEntidadActual.value.fields
+  const [moved] = list.splice(from, 1)
+  list.splice(index, 0, moved)
+  frontendFieldDragIndex.value = null
+  frontendFieldDragOver.value = null
+}
+
+function onFrontendFieldDragEnd() {
+  frontendFieldDragIndex.value = null
+  frontendFieldDragOver.value = null
+}
+
+function abrirFrontendField(field) {
+  frontendFieldActual.value = field
+  mostrarFrontendFieldDialog.value = true
+}
+
+function onFrontendEntityDragStart(index) {
+  frontendEntityDragIndex.value = index
+}
+
+function onFrontendEntityDragOver(index) {
+  frontendEntityDragOver.value = index
+}
+
+function onFrontendEntityDrop(index) {
+  const from = frontendEntityDragIndex.value
+  if (from === null || from === undefined) return
+  if (!frontendConfig.value?.entities?.length) return
+  if (from === index) {
+    frontendEntityDragIndex.value = null
+    frontendEntityDragOver.value = null
+    return
+  }
+
+  const list = frontendConfig.value.entities
+  const [moved] = list.splice(from, 1)
+  list.splice(index, 0, moved)
+  frontendEntityDragIndex.value = null
+  frontendEntityDragOver.value = null
+}
+
+function onFrontendEntityDragEnd() {
+  frontendEntityDragIndex.value = null
+  frontendEntityDragOver.value = null
+}
+
+async function abrirFrontendEntidad(entity) {
+  frontendEntidadActual.value = entity
+  ensureFrontendEntityConfig(frontendEntidadActual.value)
+  const fields = await campoService.getByEntity(systemId, entity.entityId || entity.id)
+  ensureFrontendFieldConfigs(frontendEntidadActual.value, fields.data || [])
+  mostrarFrontendDialog.value = true
+}
+
 async function generarBackend() {
   const nombre = sistema.value?.name || 'sistema'
   const ok = window.confirm(`Generar backend para ${nombre}?`)
@@ -2026,6 +3200,46 @@ async function generarBackend() {
   }
 }
 
+async function generarFrontend() {
+  const nombre = sistema.value?.name || 'sistema'
+  const ok = window.confirm(`Generar frontend para ${nombre}?`)
+  if (!ok) return
+
+  try {
+    const { data } = await sistemaService.generarFrontend(systemId, false)
+    const outputPath = data?.outputPath || data?.OutputPath
+    await cargarMenuTree()
+    window.alert(`Frontend generado en:\n${outputPath}`)
+  } catch (error) {
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data?.Message ||
+      'Error al generar frontend.'
+
+    if (message.includes('overwrite=true')) {
+      const overwrite = window.confirm(`${message}\n\nDeseas reemplazarlo?`)
+      if (overwrite) {
+        try {
+          const { data } = await sistemaService.generarFrontend(systemId, true)
+          const outputPath = data?.outputPath || data?.OutputPath
+          await cargarMenuTree()
+          window.alert(`Frontend generado en:\n${outputPath}`)
+          return
+        } catch (innerError) {
+          const innerMessage =
+            innerError?.response?.data?.message ||
+            innerError?.response?.data?.Message ||
+            'Error al reemplazar el frontend.'
+          window.alert(innerMessage)
+          return
+        }
+      }
+    }
+
+    window.alert(message)
+  }
+}
+
 onMounted(async () => {
   const savedBase = localStorage.getItem('backendConsoleBaseUrl')
   apiConsole.value.baseUrl = savedBase || backendBaseUrl.value
@@ -2033,6 +3247,8 @@ onMounted(async () => {
   await cargarEntidades()
   await cargarRelaciones()
   await cargarBackendConfig()
+  await cargarFrontendConfig()
+  await checkFrontendHealth()
   if (tab.value === 'herramientas') {
     startHealthPolling()
     startLogsPolling()
@@ -2108,5 +3324,20 @@ function entidadNombre(id) {
 .port-value {
   font-size: 0.95rem;
   color: #1f2937;
+}
+
+.frontend-fields-table .drag-handle,
+.frontend-entities-table .drag-handle {
+  cursor: grab;
+  color: #64748b;
+}
+
+.frontend-field-row.is-drag-over {
+  background: #eef2ff;
+}
+
+.frontend-fields-table .drag-cell,
+.frontend-entities-table .drag-cell {
+  width: 36px;
 }
 </style>
