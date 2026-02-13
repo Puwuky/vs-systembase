@@ -58,7 +58,12 @@ async function login() {
             password: password.value
         })
 
-        localStorage.setItem('token', res.data.token)
+    const token = res.data?.token || res.data?.Token
+    if (token) {
+      localStorage.setItem('token', token)
+    } else {
+      throw new Error('Token no recibido')
+    }
         router.push('/home')
 
     } catch {
