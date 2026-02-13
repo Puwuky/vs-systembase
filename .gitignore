@@ -1,0 +1,10 @@
+systems/**
+!systems/.gitkeep
+!systems/mapeo/
+!systems/mapeo/**
+.DS_Store
+
+# mapeo build artifacts
+systems/mapeo/backend/bin/
+systems/mapeo/backend/obj/
+systems/mapeo/backend/storage/
