@@ -15,11 +15,11 @@
         </div>
       </v-col>
       <v-col cols="auto" class="d-flex ga-2">
-        <v-btn variant="tonal" color="primary" @click="volver">
+        <v-btn class="sb-btn ghost" variant="text" @click="volver">
           <v-icon left>mdi-arrow-left</v-icon>
           Volver
         </v-btn>
-        <v-btn color="primary" :disabled="!entidadSeleccionada" @click="nuevoRegistro">
+        <v-btn class="sb-btn primary" color="primary" :disabled="!entidadSeleccionada" @click="nuevoRegistro">
           <v-icon left>mdi-plus</v-icon>
           Nuevo registro
         </v-btn>

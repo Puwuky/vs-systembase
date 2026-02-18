@@ -1,19 +1,26 @@
 <template>
-  <v-dialog v-model="model" max-width="720px">
-    <v-card class="dialog-card">
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2" color="primary">
-          {{ isEdit ? 'mdi-pencil' : isDuplicate ? 'mdi-content-copy' : 'mdi-plus-box' }}
-        </v-icon>
-        <span class="text-h6 font-weight-medium">
-          {{ dialogTitle }}
-        </span>
+  <v-dialog v-model="model" max-width="600" scrollable>
+    <v-card class="dialog-card sb-dialog">
+      <v-card-title class="sb-dialog-title">
+        <div class="sb-dialog-icon">
+          <v-icon color="primary">
+            {{ isEdit ? 'mdi-pencil' : isDuplicate ? 'mdi-content-copy' : 'mdi-plus-box' }}
+          </v-icon>
+        </div>
+        <div>
+          <div class="sb-dialog-title-text">
+            {{ dialogTitle }}
+          </div>
+          <div class="sb-dialog-subtitle">
+            Completa los campos requeridos para continuar.
+          </div>
+        </div>
       </v-card-title>
 
       <v-divider />
 
-      <v-card-text>
-        <v-form class="form">
+      <v-card-text class="sb-dialog-body sb-dialog-scroll">
+        <v-form class="form sb-form">
           <template v-if="layout === 'tabs'">
             <v-tabs v-model="activeTab" density="compact">
               <v-tab v-for="(group, index) in fieldGroups" :key="group.name" :value="index">
@@ -22,8 +29,14 @@
             </v-tabs>
             <v-window v-model="activeTab">
               <v-window-item v-for="(group, index) in fieldGroups" :key="group.name" :value="index">
-                <v-row v-for="field in group.fields" :key="field.columnName">
-                  <v-col cols="12">
+                <v-row class="sb-form-row sb-form-grid" dense>
+                  <v-col
+                    v-for="field in group.fields"
+                    :key="field.columnName"
+                    :cols="fieldCols(field).cols"
+                    :sm="fieldCols(field).sm"
+                    :md="fieldCols(field).md"
+                  >
                     <component
                       :is="resolveComponent(field)"
                       v-model="form[field.columnName]"
@@ -34,7 +47,8 @@
                       :maxlength="field.maxLength || undefined"
                       :type="resolveInputType(field) === 'number' ? 'number' : resolveInputType(field) === 'date' ? 'date' : resolveInputType(field) === 'datetime' ? 'datetime-local' : undefined"
                       clearable
-                      :density="density"
+                      :density="modalDensity"
+                      :variant="inputVariant"
                       :rules="rulesFor(field)"
                     />
                   </v-col>
@@ -44,11 +58,17 @@
           </template>
 
           <template v-else-if="layout === 'sections'">
-            <v-card v-for="group in fieldGroups" :key="group.name" class="mb-3" elevation="0">
+            <v-card v-for="group in fieldGroups" :key="group.name" class="mb-3 sb-form-section" elevation="0">
               <v-card-title class="text-subtitle-2">{{ group.name }}</v-card-title>
               <v-card-text>
-                <v-row v-for="field in group.fields" :key="field.columnName">
-                  <v-col cols="12">
+                <v-row class="sb-form-row sb-form-grid" dense>
+                  <v-col
+                    v-for="field in group.fields"
+                    :key="field.columnName"
+                    :cols="fieldCols(field).cols"
+                    :sm="fieldCols(field).sm"
+                    :md="fieldCols(field).md"
+                  >
                     <component
                       :is="resolveComponent(field)"
                       v-model="form[field.columnName]"
@@ -59,7 +79,8 @@
                       :maxlength="field.maxLength || undefined"
                       :type="resolveInputType(field) === 'number' ? 'number' : resolveInputType(field) === 'date' ? 'date' : resolveInputType(field) === 'datetime' ? 'datetime-local' : undefined"
                       clearable
-                      :density="density"
+                      :density="modalDensity"
+                      :variant="inputVariant"
                       :rules="rulesFor(field)"
                     />
                   </v-col>
@@ -69,8 +90,14 @@
           </template>
 
           <template v-else>
-            <v-row v-for="field in editableFields" :key="field.columnName">
-              <v-col cols="12">
+            <v-row class="sb-form-row sb-form-grid" dense>
+              <v-col
+                v-for="field in editableFields"
+                :key="field.columnName"
+                :cols="fieldCols(field).cols"
+                :sm="fieldCols(field).sm"
+                :md="fieldCols(field).md"
+              >
                 <component
                   :is="resolveComponent(field)"
                   v-model="form[field.columnName]"
@@ -81,7 +108,8 @@
                   :maxlength="field.maxLength || undefined"
                   :type="resolveInputType(field) === 'number' ? 'number' : resolveInputType(field) === 'date' ? 'date' : resolveInputType(field) === 'datetime' ? 'datetime-local' : undefined"
                   clearable
-                  :density="density"
+                  :density="modalDensity"
+                  :variant="inputVariant"
                   :rules="rulesFor(field)"
                 />
               </v-col>
@@ -92,10 +120,32 @@
 
       <v-divider />
 
-      <v-card-actions class="pa-4">
+      <v-card-actions class="pa-4 sb-dialog-actions">
         <v-spacer />
-        <v-btn variant="text" :density="density" @click="cerrar">Cancelar</v-btn>
-        <v-btn color="primary" :density="density" @click="guardar">Guardar</v-btn>
+        <v-btn class="sb-btn ghost" variant="text" :density="modalDensity" @click="cerrar">Cancelar</v-btn>
+        <v-btn class="sb-btn primary" color="primary" :density="modalDensity" @click="guardar">Guardar</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="confirmDialog" max-width="420">
+    <v-card class="sb-dialog">
+      <v-card-title class="sb-dialog-title">
+        <div class="sb-dialog-icon">
+          <v-icon color="primary">mdi-content-save</v-icon>
+        </div>
+        <div>
+          <div class="sb-dialog-title-text">Confirmar guardado</div>
+          <div class="sb-dialog-subtitle">Revisa que los datos sean correctos.</div>
+        </div>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="sb-dialog-body">
+        {{ messages?.confirmSave || 'Guardar cambios?' }}
+      </v-card-text>
+      <v-card-actions class="sb-dialog-actions d-flex justify-end ga-2">
+        <v-btn class="sb-btn ghost" variant="text" @click="confirmDialog = false">Cancelar</v-btn>
+        <v-btn class="sb-btn primary" @click="confirmSaveAction">Aceptar</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -140,7 +190,9 @@ export default {
   data() {
     return {
       form: {},
-      activeTab: 0
+      activeTab: 0,
+      confirmDialog: false,
+      pendingSave: false
     }
   },
 
@@ -190,6 +242,15 @@ export default {
         groups[section].push(field)
       }
       return Object.entries(groups).map(([name, fields]) => ({ name, fields }))
+    },
+
+    modalDensity() {
+      if (this.density === 'comfortable') return 'compact'
+      return this.density
+    },
+
+    inputVariant() {
+      return 'outlined'
     }
   },
 
@@ -250,16 +311,49 @@ export default {
       return rules
     },
 
+    fieldCols(field) {
+      const type = this.resolveInputType(field)
+      const name = String(field?.columnName || field?.name || '').toLowerCase()
+      const smallField = [
+        'id', 'incidenteid', 'tipohechoid', 'lat', 'lng', 'confidence',
+        'format', 'durationsec', 'hash', 'estado', 'createdat', 'fecha', 'hora'
+      ].some(token => name.includes(token))
+      const longText = type === 'textarea'
+        || (field?.maxLength && Number(field.maxLength) > 200)
+        || name.includes('descripcion')
+        || name.includes('observ')
+        || name.includes('detalle')
+        || name.includes('coment')
+        || name.includes('nota')
+        || name.includes('json')
+        || name.includes('raw')
+        || name.includes('text')
+      if (longText) return { cols: 12, sm: 12, md: 12 }
+      if (smallField || type === 'checkbox' || type === 'switch') return { cols: 12, sm: 6, md: 6 }
+      return { cols: 12, sm: 6, md: 6 }
+    },
+
     cerrar() {
       this.model = false
     },
 
     async guardar() {
-      if (this.confirmSave) {
-        const ok = window.confirm(this.messages?.confirmSave || 'Guardar cambios?')
-        if (!ok) return
+      if (this.confirmSave && !this.pendingSave) {
+        this.confirmDialog = true
+        this.pendingSave = true
+        return
       }
+      this.pendingSave = false
 
+      await this.persistSave()
+    },
+
+    async confirmSaveAction() {
+      this.confirmDialog = false
+      await this.persistSave()
+    },
+
+    async persistSave() {
       const payload = { ...this.form }
       const pkName = this.pkField?.columnName || this.pkField?.name
       if (this.isDuplicate && pkName) {
@@ -288,6 +382,6 @@ export default {
 
 <style scoped>
 .dialog-card {
-  border-radius: 16px;
+  border-radius: var(--sb-radius);
 }
 </style>

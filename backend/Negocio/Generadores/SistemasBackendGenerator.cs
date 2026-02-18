@@ -100,7 +100,7 @@ namespace Backend.Negocio.Generadores
             {
                 if (!overwrite)
                 {
-                    TryUpdateEnvFiles(outputRoot);
+                    TryUpdateEnvFiles(outputRoot, systemConfig);
                     return new BackendGenerateResult
                     {
                         Ok = false,
@@ -113,7 +113,7 @@ namespace Backend.Negocio.Generadores
 
             Directory.CreateDirectory(outputRoot);
 
-            TryUpdateEnvFiles(outputRoot);
+            TryUpdateEnvFiles(outputRoot, systemConfig);
 
             var controllersDir = Path.Combine(outputRoot, "Controllers");
             var modelsDir = Path.Combine(outputRoot, "Models");
@@ -253,10 +253,28 @@ JWT_SECRET=CLAVE_SUPER_SECRETA
 JWT_ISSUER=systembase
 JWT_AUDIENCE=systembase
 JWT_EXPIRE_MINUTES=120
+
+## Audio pipeline (local)
+AUDIO_STORAGE_PROVIDER=local
+AUDIO_STORAGE_ROOT=storage/audio
+AUDIO_ALLOWED_EXT=mp3,wav,m4a,ogg,opus,webm,aac
+AUDIO_MAX_MB=50
+
+## Transcoding (ffmpeg)
+AUDIO_TRANSCODE_ENABLED=false
+AUDIO_TRANSCODE_FORMAT=opus
+AUDIO_TRANSCODE_BITRATE=32k
+AUDIO_TRANSCODE_DELETE_ORIGINAL=true
+FFMPEG_PATH=ffmpeg
+
+## Retention policies
+AUDIO_RETENTION_SOFT_DAYS=0
+AUDIO_RETENTION_PURGE_DAYS=0
+AUDIO_RETENTION_RUN_MINUTES=60
 ";
         }
 
-        private static string BuildEnvFile()
+        private static string BuildEnvFile(BackendSystemConfig systemConfig)
         {
             string Get(string key, string fallback) =>
                 string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(key))
@@ -274,6 +292,27 @@ JWT_EXPIRE_MINUTES=120
             var jwtAudience = Get("JWT_AUDIENCE", "systembase");
             var jwtExpire = Get("JWT_EXPIRE_MINUTES", "120");
 
+            var audioProvider = string.IsNullOrWhiteSpace(systemConfig.AudioStorageProvider)
+                ? "local"
+                : systemConfig.AudioStorageProvider;
+            var audioStorageRoot = Get("AUDIO_STORAGE_ROOT", "storage/audio");
+            var audioAllowedExt = Get("AUDIO_ALLOWED_EXT", "mp3,wav,m4a,ogg,opus,webm,aac");
+            var audioMaxMb = Get("AUDIO_MAX_MB", "50");
+
+            var transcodeEnabled = systemConfig.AudioTranscodeEnabled ? "true" : "false";
+            var transcodeFormat = string.IsNullOrWhiteSpace(systemConfig.AudioTranscodeFormat)
+                ? "opus"
+                : systemConfig.AudioTranscodeFormat;
+            var transcodeBitrate = string.IsNullOrWhiteSpace(systemConfig.AudioTranscodeBitrate)
+                ? "32k"
+                : systemConfig.AudioTranscodeBitrate;
+            var transcodeDeleteOriginal = systemConfig.AudioTranscodeDeleteOriginal ? "true" : "false";
+            var ffmpegPath = Get("FFMPEG_PATH", "ffmpeg");
+
+            var retentionSoftDays = systemConfig.AudioRetentionSoftDays.ToString();
+            var retentionPurgeDays = systemConfig.AudioRetentionPurgeDays.ToString();
+            var retentionRunMinutes = systemConfig.AudioRetentionRunMinutes.ToString();
+
             return $@"DB_SERVER={dbServer}
 DB_NAME={dbName}
 DB_USER={dbUser}
@@ -284,14 +323,32 @@ JWT_SECRET={jwtSecret}
 JWT_ISSUER={jwtIssuer}
 JWT_AUDIENCE={jwtAudience}
 JWT_EXPIRE_MINUTES={jwtExpire}
+
+## Audio pipeline (local)
+AUDIO_STORAGE_PROVIDER={audioProvider}
+AUDIO_STORAGE_ROOT={audioStorageRoot}
+AUDIO_ALLOWED_EXT={audioAllowedExt}
+AUDIO_MAX_MB={audioMaxMb}
+
+## Transcoding (ffmpeg)
+AUDIO_TRANSCODE_ENABLED={transcodeEnabled}
+AUDIO_TRANSCODE_FORMAT={transcodeFormat}
+AUDIO_TRANSCODE_BITRATE={transcodeBitrate}
+AUDIO_TRANSCODE_DELETE_ORIGINAL={transcodeDeleteOriginal}
+FFMPEG_PATH={ffmpegPath}
+
+## Retention policies
+AUDIO_RETENTION_SOFT_DAYS={retentionSoftDays}
+AUDIO_RETENTION_PURGE_DAYS={retentionPurgeDays}
+AUDIO_RETENTION_RUN_MINUTES={retentionRunMinutes}
 ";
         }
 
-        private static void TryUpdateEnvFiles(string outputRoot)
+        private static void TryUpdateEnvFiles(string outputRoot, BackendSystemConfig systemConfig)
         {
             try
             {
-                File.WriteAllText(Path.Combine(outputRoot, ".env"), BuildEnvFile(), new UTF8Encoding(false));
+                File.WriteAllText(Path.Combine(outputRoot, ".env"), BuildEnvFile(systemConfig), new UTF8Encoding(false));
                 File.WriteAllText(Path.Combine(outputRoot, ".env.example"), BuildEnvExample(), new UTF8Encoding(false));
             }
             catch
@@ -313,7 +370,12 @@ Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        options.JsonSerializerOptions.DictionaryKeyPolicy = null;
+    });
 
 builder.Services.AddCors(options =>
 {

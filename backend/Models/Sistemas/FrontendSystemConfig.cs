@@ -10,7 +10,7 @@ namespace Backend.Models.Sistemas
         public string PrimaryColor { get; set; } = "#2563eb";
         public string SecondaryColor { get; set; } = "#0ea5e9";
         public string Density { get; set; } = "comfortable";
-        public string FontFamily { get; set; } = "Inter, system-ui, -apple-system, Segoe UI, sans-serif";
+        public string FontFamily { get; set; } = "Manrope, system-ui, -apple-system, 'Segoe UI', sans-serif";
         public string UiMode { get; set; } = "enterprise";
         public string Locale { get; set; } = "es-AR";
         public string Currency { get; set; } = "ARS";
