@@ -1,19 +1,26 @@
 <template>
-  <v-dialog v-model="model" max-width="720px">
-    <v-card class="dialog-card">
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2" color="primary">
-          {{ isEdit ? 'mdi-pencil' : isDuplicate ? 'mdi-content-copy' : 'mdi-plus-box' }}
-        </v-icon>
-        <span class="text-h6 font-weight-medium">
-          {{ dialogTitle }}
-        </span>
+  <v-dialog v-model="model" max-width="640px" scrollable>
+    <v-card class="dialog-card sb-dialog">
+      <v-card-title class="sb-dialog-title">
+        <div class="sb-dialog-icon">
+          <v-icon color="primary">
+            {{ isEdit ? 'mdi-pencil' : isDuplicate ? 'mdi-content-copy' : 'mdi-plus-box' }}
+          </v-icon>
+        </div>
+        <div>
+          <div class="sb-dialog-title-text">
+            {{ dialogTitle }}
+          </div>
+          <div class="sb-dialog-subtitle">
+            Completa los campos requeridos para continuar.
+          </div>
+        </div>
       </v-card-title>
 
       <v-divider />
 
-      <v-card-text>
-        <v-form class="form">
+      <v-card-text class="sb-dialog-body sb-dialog-scroll">
+        <v-form class="form sb-form">
           <template v-if="layout === 'tabs'">
             <v-tabs v-model="activeTab" density="compact">
               <v-tab v-for="(group, index) in fieldGroups" :key="group.name" :value="index">
@@ -22,7 +29,7 @@
             </v-tabs>
             <v-window v-model="activeTab">
               <v-window-item v-for="(group, index) in fieldGroups" :key="group.name" :value="index">
-                <v-row v-for="field in group.fields" :key="field.columnName">
+                <v-row v-for="field in group.fields" :key="field.columnName" class="sb-form-row sb-form-grid" dense>
                   <v-col cols="12">
                     <component
                       :is="resolveInputType(field) === 'select' ? 'v-select'
@@ -57,10 +64,10 @@
           </template>
 
           <template v-else-if="layout === 'sections'">
-            <v-card v-for="group in fieldGroups" :key="group.name" class="mb-3" elevation="0">
+            <v-card v-for="group in fieldGroups" :key="group.name" class="mb-3 sb-form-section" elevation="0">
               <v-card-title class="text-subtitle-2">{{ group.name }}</v-card-title>
               <v-card-text>
-                <v-row v-for="field in group.fields" :key="field.columnName">
+                <v-row v-for="field in group.fields" :key="field.columnName" class="sb-form-row sb-form-grid" dense>
                   <v-col cols="12">
                     <component
                       :is="resolveInputType(field) === 'select' ? 'v-select'
@@ -95,7 +102,7 @@
           </template>
 
           <template v-else>
-            <v-row v-for="field in editableFields" :key="field.columnName">
+            <v-row v-for="field in editableFields" :key="field.columnName" class="sb-form-row sb-form-grid" dense>
               <v-col cols="12">
                 <component
                   :is="resolveInputType(field) === 'select' ? 'v-select'
@@ -131,10 +138,10 @@
 
       <v-divider />
 
-      <v-card-actions class="pa-4">
+      <v-card-actions class="pa-4 sb-dialog-actions">
         <v-spacer />
-        <v-btn variant="text" :density="density" @click="cerrar">Cancelar</v-btn>
-        <v-btn color="primary" :density="density" @click="guardar">Guardar</v-btn>
+        <v-btn class="sb-btn ghost" variant="text" :density="density" @click="cerrar">Cancelar</v-btn>
+        <v-btn class="sb-btn primary" color="primary" :density="density" @click="guardar">Guardar</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
