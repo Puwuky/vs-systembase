@@ -3,7 +3,7 @@
     app
     :model-value="drawer"
     @update:model-value="emit('update:drawer', $event)"
-    width="260"
+    width="280"
     class="sidebar"
   >
     <div class="sidebar-header">
@@ -52,7 +52,8 @@ const menuItems = computed(() => props.menu || [])
 
 <style scoped>
 .sidebar {
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-right: 1px solid var(--sb-border);
+  background: var(--sb-surface);
 }
 
 .sidebar-header {
@@ -64,19 +65,64 @@ const menuItems = computed(() => props.menu || [])
 
 .sidebar-title {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  font-family: var(--sb-font-display);
 }
 
 .sidebar-list {
-  padding-top: 8px;
+  padding: 12px;
 }
 
 .sidebar-active {
-  background-color: rgba(25, 118, 210, 0.12);
-  color: #1976d2;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(14, 165, 233, 0.12));
+  color: var(--sb-primary);
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.18);
+  position: relative;
 }
 
 .v-icon {
   opacity: 0.85;
+}
+
+.sidebar :deep(.sidebar-item) {
+  margin: 4px 0;
+  border-radius: 12px;
+  min-height: 38px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.sidebar :deep(.sidebar-item:hover) {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.sidebar :deep(.sidebar-item .v-list-item__prepend) {
+  margin-inline-end: 2px;
+}
+
+.sidebar :deep(.sidebar-item .v-list-item-title) {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar :deep(.sidebar-item .v-icon) {
+  color: #64748b;
+}
+
+.sidebar :deep(.sidebar-active .v-icon),
+.sidebar :deep(.sidebar-active .v-list-item-title) {
+  color: var(--sb-primary);
+}
+
+.sidebar :deep(.sidebar-active)::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--sb-primary);
 }
 </style>

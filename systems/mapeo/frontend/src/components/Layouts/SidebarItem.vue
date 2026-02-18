@@ -72,10 +72,10 @@ function hasActiveDescendant(item, path) {
 const opened = ref(false)
 
 const indentStyle = computed(() => ({
-  paddingLeft: `${16 + props.depth * 12}px`
+  paddingLeft: props.depth === 0 ? '16px' : '8px'
 }))
 
-const iconSize = computed(() => (props.depth >= 2 ? 16 : 20))
+const iconSize = computed(() => (props.depth >= 1 ? 18 : 20))
 
 watch(
   () => props.activePath,

@@ -17,14 +17,14 @@
       <v-col cols="auto" class="d-flex ga-2">
         <v-btn
           v-if="showAudioRecorder"
-          color="deep-purple"
+          class="cta-button ghost"
           variant="tonal"
           @click="abrirAudioDialog"
         >
           <v-icon left>mdi-microphone</v-icon>
           Grabar audio
         </v-btn>
-        <v-btn color="primary" :disabled="!entidadSeleccionada" @click="nuevoRegistro">
+        <v-btn class="cta-button primary" :disabled="!entidadSeleccionada" @click="nuevoRegistro">
           <v-icon left>mdi-plus</v-icon>
           Nuevo registro
         </v-btn>
@@ -33,28 +33,37 @@
 
     <v-row>
       <v-col cols="12" md="3">
-        <v-card elevation="2" class="card">
+        <v-card elevation="2" class="card side-card summary-card">
           <v-card-title class="d-flex align-center">
-            <v-icon class="mr-2" color="primary">mdi-folder-outline</v-icon>
-            <span class="text-h6">Vistas</span>
+            <v-icon class="mr-2" color="primary">mdi-chart-box-outline</v-icon>
+            <span class="text-h6">Resumen</span>
           </v-card-title>
           <v-divider />
-          <v-list :density="uiDensity">
-            <v-list-item
-              v-for="entidad in runtimeEntities"
-              :key="entidad.entityId || entidad.id || entidad.name"
-              :active="entidadSeleccionada?.entityId === entidad.entityId"
-              :prepend-icon="entidadMenuIcon(entidad)"
-              @click="irEntidad(entidad)"
-            >
-              <v-list-item-title>{{ entidadLabel(entidad) }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
+          <v-card-text>
+            <div v-if="summaryItems.length" class="summary-grid">
+              <div v-for="item in summaryItems" :key="item.label" class="summary-item">
+                <div class="summary-icon">
+                  <v-icon :color="item.color || 'primary'" size="18">{{ item.icon }}</v-icon>
+                </div>
+                <div>
+                  <div class="summary-label">{{ item.label }}</div>
+                  <div class="summary-value">{{ item.value }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-caption text-medium-emphasis">Sin datos para resumir.</div>
+
+            <v-divider v-if="summaryMeta" class="my-3" />
+            <div v-if="summaryMeta" class="summary-meta">
+              <span class="summary-meta-label">Actualizado:</span>
+              <span>{{ summaryMeta }}</span>
+            </div>
+          </v-card-text>
         </v-card>
       </v-col>
 
       <v-col cols="12" md="9">
-        <v-card v-if="showIncidentMap" elevation="2" class="card mb-4">
+        <v-card v-if="showIncidentMap" elevation="2" class="card mb-4 map-card">
           <v-card-title class="d-flex align-center justify-space-between">
             <div class="d-flex align-center">
               <v-icon class="mr-2" color="primary">mdi-map</v-icon>
@@ -80,7 +89,7 @@
                   <iframe
                     :src="mapUrls.embed"
                     width="100%"
-                    height="240"
+                    height="300"
                     style="border:0;"
                     loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade"
@@ -156,7 +165,9 @@
             {{ error }}
           </v-alert>
 
-          <div v-if="loading" class="pa-4">Cargando...</div>
+          <div v-if="loading" class="pa-4">
+            <v-skeleton-loader type="heading, text, table" class="sb-skeleton" />
+          </div>
 
           <div v-else-if="!entidadSeleccionada" class="pa-4">
             Selecciona una vista para ver registros.
@@ -180,7 +191,7 @@
               >
                 <td v-for="col in columns" :key="col.key" :class="{ 'actions-td': col.key === 'actions' }">
                   <template v-if="col.key === 'actions'">
-                    <div class="actions-cell">
+                    <div class="actions-cell actions-grid">
                       <v-tooltip text="Editar">
                         <template #activator="{ props }">
                           <v-btn v-bind="props" icon size="x-small" color="primary" variant="text" @click="editarRegistro(item.raw || item)">
@@ -329,13 +340,18 @@
     />
 
     <v-dialog v-model="audioDialog" max-width="640">
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="deep-purple">mdi-microphone</v-icon>
-          <span class="text-h6">Grabar audio</span>
+      <v-card class="sb-dialog">
+        <v-card-title class="sb-dialog-title">
+          <div class="sb-dialog-icon">
+            <v-icon color="deep-purple">mdi-microphone</v-icon>
+          </div>
+          <div>
+            <div class="sb-dialog-title-text">Grabar audio</div>
+            <div class="sb-dialog-subtitle">Captura directa desde el navegador.</div>
+          </div>
         </v-card-title>
         <v-divider />
-        <v-card-text>
+        <v-card-text class="sb-dialog-body">
           <v-alert v-if="!audioSupported" type="error" variant="tonal" class="mb-4">
             Tu navegador no soporta grabacion de audio.
           </v-alert>
@@ -346,31 +362,40 @@
             hint="Opcional: agrega contexto del incidente"
             persistent-hint
             :density="uiDensity"
+            variant="outlined"
           />
 
-          <div class="d-flex flex-wrap ga-2 mt-2">
-            <v-btn
-              color="red"
-              variant="tonal"
-              :disabled="audioRecording || !audioSupported"
-              @click="startRecording"
-            >
-              <v-icon left>mdi-record-circle</v-icon>
-              Grabar
-            </v-btn>
-            <v-btn
-              color="orange"
-              variant="tonal"
-              :disabled="!audioRecording"
-              @click="stopRecording"
-            >
-              <v-icon left>mdi-stop</v-icon>
-              Detener
-            </v-btn>
-            <v-btn variant="text" :disabled="audioRecording" @click="clearRecording">
-              Limpiar
-            </v-btn>
-          </div>
+          <v-row class="mt-2" dense>
+            <v-col cols="12" sm="4">
+              <v-btn
+                class="sb-btn danger"
+                block
+                variant="tonal"
+                :disabled="audioRecording || !audioSupported"
+                @click="startRecording"
+              >
+                <v-icon left>mdi-record-circle</v-icon>
+                Grabar
+              </v-btn>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-btn
+                class="sb-btn warning"
+                block
+                variant="tonal"
+                :disabled="!audioRecording"
+                @click="stopRecording"
+              >
+                <v-icon left>mdi-stop</v-icon>
+                Detener
+              </v-btn>
+            </v-col>
+            <v-col cols="12" sm="4">
+              <v-btn class="sb-btn ghost" block variant="text" :disabled="audioRecording" @click="clearRecording">
+                Limpiar
+              </v-btn>
+            </v-col>
+          </v-row>
 
           <audio v-if="audioUrl" class="audio-player mt-4" controls :src="audioUrl"></audio>
 
@@ -395,9 +420,10 @@
           </v-alert>
         </v-card-text>
         <v-divider />
-        <v-card-actions class="d-flex justify-end ga-2">
-          <v-btn variant="text" @click="cerrarAudioDialog">Cerrar</v-btn>
+        <v-card-actions class="d-flex justify-end ga-2 sb-dialog-actions">
+          <v-btn class="sb-btn ghost" variant="text" @click="cerrarAudioDialog">Cerrar</v-btn>
           <v-btn
+            class="sb-btn primary"
             color="deep-purple"
             :disabled="!audioBlob || audioUploading"
             @click="uploadRecording"
@@ -410,13 +436,18 @@
     </v-dialog>
 
     <v-dialog v-model="audioPlayDialog" max-width="520">
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon class="mr-2" color="deep-purple">mdi-play-circle</v-icon>
-          <span class="text-h6">Reproducir audio</span>
+      <v-card class="sb-dialog">
+        <v-card-title class="sb-dialog-title">
+          <div class="sb-dialog-icon">
+            <v-icon color="deep-purple">mdi-play-circle</v-icon>
+          </div>
+          <div>
+            <div class="sb-dialog-title-text">Reproducir audio</div>
+            <div class="sb-dialog-subtitle">Escucha el archivo original.</div>
+          </div>
         </v-card-title>
         <v-divider />
-        <v-card-text>
+        <v-card-text class="sb-dialog-body">
           <div v-if="audioPlayItem" class="text-caption text-medium-emphasis mb-2">
             Audio #{{ getRecordId(audioPlayItem) }}
             <span v-if="audioPlayItem?.Incidenteid || audioPlayItem?.IncidenteId">
@@ -439,8 +470,8 @@
           </audio>
         </v-card-text>
         <v-divider />
-        <v-card-actions class="d-flex justify-end">
-          <v-btn variant="text" @click="cerrarAudioPlayback">Cerrar</v-btn>
+        <v-card-actions class="d-flex justify-end sb-dialog-actions">
+          <v-btn class="sb-btn ghost" variant="text" @click="cerrarAudioPlayback">Cerrar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -452,7 +483,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import frontendConfig from '../../config/frontend-config.json'
 import { toKebab } from '../../utils/slug.js'
@@ -461,6 +492,14 @@ import runtimeApi from '../../api/runtime.service.js'
 
 const route = useRoute()
 const router = useRouter()
+const colorMode = inject('colorMode', null)
+const isDark = computed(() => {
+  if (colorMode?.isDark?.value != null) return colorMode.isDark.value
+  if (typeof localStorage !== 'undefined') {
+    return localStorage.getItem('sb-theme') === 'dark'
+  }
+  return false
+})
 
 const config = ref(JSON.parse(JSON.stringify(frontendConfig || {})))
 
@@ -540,11 +579,33 @@ const uiMode = computed(() => config.value?.system?.uiMode || 'enterprise')
 const locale = computed(() => config.value?.system?.locale || 'es-AR')
 const currency = computed(() => config.value?.system?.currency || 'ARS')
 
-const themeStyle = computed(() => ({
-  '--sb-primary': config.value?.system?.primaryColor || '#2563eb',
-  '--sb-secondary': config.value?.system?.secondaryColor || '#0ea5e9',
-  '--sb-font': config.value?.system?.fontFamily || 'Inter, system-ui, -apple-system, Segoe UI, sans-serif'
-}))
+const themeStyle = computed(() => {
+  const system = config.value?.system || {}
+  const theme = config.value?.theme || {}
+  const themeDark = config.value?.themeDark || {}
+  const activeTheme = isDark.value ? themeDark : theme
+  const brand = activeTheme?.brand || theme?.brand || {}
+  return {
+    '--sb-primary': brand.primary || system.primaryColor || '#1d4ed8',
+    '--sb-secondary': brand.secondary || system.secondaryColor || '#0ea5e9',
+    '--sb-accent': brand.accent || '#f97316',
+    '--sb-primary-soft': activeTheme.primarySoft || theme.primarySoft || 'rgba(29,78,216,0.12)',
+    '--sb-bg': activeTheme.background || theme.background || '#f8fafc',
+    '--sb-surface': activeTheme.surface || theme.surface || '#ffffff',
+    '--sb-muted': activeTheme.muted || theme.muted || '#64748b',
+    '--sb-border': activeTheme.border || theme.border || 'rgba(15,23,42,0.12)',
+    '--sb-border-soft': activeTheme.borderSoft || theme.borderSoft || 'rgba(15,23,42,0.08)',
+    '--sb-radius': `${activeTheme.radius ?? theme.radius ?? 16}px`,
+    '--sb-shadow': activeTheme.shadow || theme.shadow || '0 12px 30px rgba(15, 23, 42, 0.12)',
+    '--sb-font': activeTheme.fontBody || theme.fontBody || system.fontFamily || "Manrope, system-ui, -apple-system, 'Segoe UI', sans-serif",
+    '--sb-font-display': activeTheme.fontDisplay || theme.fontDisplay || "'Space Grotesk', Manrope, system-ui, -apple-system, 'Segoe UI', sans-serif",
+    '--sb-gradient': activeTheme.gradient || theme.gradient || 'linear-gradient(135deg, rgba(29,78,216,0.16), rgba(14,165,233,0.08) 45%, rgba(248,250,252,0.95))',
+    '--sb-pattern-opacity': activeTheme.patternOpacity ?? theme.patternOpacity ?? 0.06,
+    '--sb-header-bg': activeTheme.headerBg || theme.headerBg || 'rgba(255,255,255,0.9)',
+    '--sb-text': activeTheme.text || theme.text || '#0f172a',
+    '--sb-text-soft': activeTheme.textSoft || theme.textSoft || '#334155'
+  }
+})
 
 const entities = computed(() => config.value?.entities || [])
 
@@ -618,6 +679,68 @@ const showAudioPlayAction = computed(() => {
 })
 
 const showMapAction = computed(() => isIncidentesView.value)
+
+const summaryItems = computed(() => {
+  const items = []
+  const list = registros.value || []
+  if (!entidadSeleccionada.value) return items
+
+  items.push({
+    label: 'Total',
+    value: list.length,
+    icon: 'mdi-format-list-bulleted'
+  })
+
+  if (isIncidentesView.value) {
+    const withCoords = list.filter(item => hasCoords(item)).length
+    items.push({
+      label: 'Con coordenadas',
+      value: withCoords,
+      icon: 'mdi-map-marker',
+      color: withCoords ? 'green' : 'grey'
+    })
+    items.push({
+      label: 'Sin coordenadas',
+      value: Math.max(list.length - withCoords, 0),
+      icon: 'mdi-map-marker-off-outline',
+      color: 'orange'
+    })
+  }
+
+  if (showRetryJob.value) {
+    const statusCounts = list.reduce((acc, item) => {
+      const status = getStatusValue(item)
+      if (!status) return acc
+      acc[status] = (acc[status] || 0) + 1
+      return acc
+    }, {})
+    if (statusCounts.done) {
+      items.push({ label: 'Completados', value: statusCounts.done, icon: 'mdi-check-circle-outline', color: 'green' })
+    }
+    if (statusCounts.processing || statusCounts.pending || statusCounts.running || statusCounts.queued) {
+      const active = (statusCounts.processing || 0) + (statusCounts.pending || 0) + (statusCounts.running || 0) + (statusCounts.queued || 0)
+      items.push({ label: 'En proceso', value: active, icon: 'mdi-timer-sand', color: 'orange' })
+    }
+    if (statusCounts.error) {
+      items.push({ label: 'Errores', value: statusCounts.error, icon: 'mdi-alert-circle-outline', color: 'red' })
+    }
+  }
+
+  return items
+})
+
+const summaryMeta = computed(() => {
+  const list = registros.value || []
+  if (!list.length) return ''
+  const timestamps = list
+    .map(item => item?.UpdateAt || item?.updateAt || item?.CreatedAt || item?.createdAt)
+    .filter(Boolean)
+    .map(value => new Date(value).getTime())
+    .filter(value => Number.isFinite(value))
+  if (!timestamps.length) return ''
+  const latest = new Date(Math.max(...timestamps))
+  return latest.toLocaleString(locale.value)
+})
 
 const mapUrls = computed(() => {
   if (!mapRecord.value) return null
@@ -736,7 +859,7 @@ function normalizeConfig() {
   sys.primaryColor = sys.primaryColor || '#2563eb'
   sys.secondaryColor = sys.secondaryColor || '#0ea5e9'
   sys.density = sys.density || 'comfortable'
-  sys.fontFamily = sys.fontFamily || 'Inter, system-ui, -apple-system, Segoe UI, sans-serif'
+  sys.fontFamily = sys.fontFamily || "Manrope, system-ui, -apple-system, 'Segoe UI', sans-serif"
   sys.uiMode = sys.uiMode || 'enterprise'
   sys.locale = sys.locale || 'es-AR'
   sys.currency = sys.currency || 'ARS'
@@ -1050,6 +1173,12 @@ function shouldShowProgress(item, col) {
   if (value === 'processing' || value === 'pending' || value === 'running' || value === 'queued') return true
   if (key === 'status' && isRetrying(item)) return true
   return false
+}
+
+function getStatusValue(item) {
+  if (!item || typeof item !== 'object') return ''
+  const raw = item.Status ?? item.status ?? item.Step ?? item.step ?? item.Estado ?? item.estado ?? ''
+  return raw == null ? '' : raw.toString().toLowerCase()
 }
 
 function formatValueForCopy(item, field) {
@@ -1396,20 +1525,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .runtime-container {
-  font-family: var(--sb-font, Inter, system-ui, sans-serif);
+  font-family: var(--sb-font, "Manrope", system-ui, sans-serif);
 }
 
 .sb-page-header {
   padding: 12px;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  background: var(--sb-surface);
+  border-radius: calc(var(--sb-radius) + 2px);
+  box-shadow: var(--sb-shadow);
+  border: 1px solid var(--sb-border-soft);
+  position: relative;
 }
 
 .sb-page-icon {
   width: 48px;
   height: 48px;
-  background: rgba(37, 99, 235, 0.12);
+  background: var(--sb-primary-soft);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -1417,8 +1548,72 @@ onBeforeUnmount(() => {
   margin-right: 12px;
 }
 
+.sb-page-header::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 6px;
+  height: calc(100% - 28px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--sb-primary), var(--sb-secondary));
+  opacity: 0.7;
+}
+
 .card {
   border-radius: 16px;
+}
+
+.side-card {
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.summary-card {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.summary-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.summary-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--sb-primary-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  color: var(--sb-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.summary-value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.summary-meta {
+  font-size: 0.8rem;
+  color: var(--sb-muted);
+  display: flex;
+  gap: 6px;
+}
+
+.summary-meta-label {
+  font-weight: 600;
 }
 
 .table :deep(th) {
@@ -1439,6 +1634,11 @@ onBeforeUnmount(() => {
 
 .map-embed iframe {
   border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.map-card :deep(.v-card-title) {
+  font-weight: 600;
 }
 
 .cell-text {
@@ -1456,22 +1656,49 @@ onBeforeUnmount(() => {
 }
 
 .actions-td {
-  width: 180px;
+  width: 140px;
+  min-width: 140px;
 }
 
 .actions-cell {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  gap: 6px;
+  justify-content: center;
+  align-content: center;
 }
 
 .actions-cell :deep(.v-btn) {
   min-width: 28px;
   height: 28px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.12);
 }
 
 .actions-cell :deep(.v-icon) {
-  font-size: 18px;
+  font-size: 16px;
+}
+
+.actions-cell :deep(.v-btn:hover) {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.cta-button {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: none;
+}
+
+.cta-button.primary {
+  background: linear-gradient(135deg, var(--sb-primary), var(--sb-secondary));
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.cta-button.ghost {
+  color: var(--sb-primary);
+  border: 1px solid color-mix(in srgb, var(--sb-primary) 25%, transparent);
+  background: rgba(255, 255, 255, 0.7);
 }
 </style>
